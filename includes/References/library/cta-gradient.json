@@ -1,0 +1,72 @@
+{
+	"name": "Gradient Call-to-Action",
+	"description": "Bold full-width closing CTA on a vivid gradient with a single high-contrast button.",
+	"tags": ["cta", "gradient", "conversion", "closing"],
+	"content": [
+		{
+			"id": "ctaa0001",
+			"elType": "container",
+			"settings": {
+				"background_background": "gradient",
+				"background_color": "#7c3aed",
+				"background_color_b": "#4f46e5",
+				"background_gradient_angle": { "unit": "deg", "size": 120 },
+				"background_gradient_type": "linear",
+				"padding": { "unit": "px", "top": "88", "right": "24", "bottom": "88", "left": "24" },
+				"flex_direction": "column",
+				"align_items": "center",
+				"gap": { "unit": "px", "size": 18 },
+				"border_radius": { "unit": "px", "top": "24", "right": "24", "bottom": "24", "left": "24" }
+			},
+			"elements": [
+				{
+					"id": "ctaa0002",
+					"elType": "widget",
+					"widgetType": "heading",
+					"settings": {
+						"title": "Ready to build something great?",
+						"header_size": "h2",
+						"align": "center",
+						"title_color": "#ffffff",
+						"typography_typography": "custom",
+						"typography_font_size": { "unit": "px", "size": 42 },
+						"typography_font_weight": "800"
+					},
+					"elements": []
+				},
+				{
+					"id": "ctaa0003",
+					"elType": "widget",
+					"widgetType": "text-editor",
+					"settings": {
+						"editor": "<p>Join thousands of teams already shipping faster. No credit card required.</p>",
+						"align": "center",
+						"text_color": "#ede9fe",
+						"typography_typography": "custom",
+						"typography_font_size": { "unit": "px", "size": 18 }
+					},
+					"elements": []
+				},
+				{
+					"id": "ctaa0004",
+					"elType": "widget",
+					"widgetType": "button",
+					"settings": {
+						"text": "Get started for free",
+						"button_text": "Get started for free",
+						"button_link": { "url": "#" },
+						"align": "center",
+						"background_color": "#ffffff",
+						"button_text_color": "#5b21b6",
+						"border_radius": { "unit": "px", "top": "12", "right": "12", "bottom": "12", "left": "12" },
+						"text_padding": { "unit": "px", "top": "18", "right": "40", "bottom": "18", "left": "40" },
+						"typography_typography": "custom",
+						"typography_font_size": { "unit": "px", "size": 17 },
+						"typography_font_weight": "700"
+					},
+					"elements": []
+				}
+			]
+		}
+	]
+}

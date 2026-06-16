@@ -1,0 +1,175 @@
+{
+	"name": "Three-Tier Pricing",
+	"description": "Pricing section with three side-by-side plans; the middle plan is visually highlighted as most popular.",
+	"tags": ["pricing", "plans", "three-column", "cards"],
+	"content": [
+		{
+			"id": "pric0001",
+			"elType": "container",
+			"settings": {
+				"background_background": "classic",
+				"background_color": "#0f172a",
+				"padding": { "unit": "px", "top": "96", "right": "24", "bottom": "96", "left": "24" },
+				"flex_direction": "column",
+				"align_items": "center",
+				"gap": { "unit": "px", "size": 14 }
+			},
+			"elements": [
+				{
+					"id": "pric0002",
+					"elType": "widget",
+					"widgetType": "heading",
+					"settings": {
+						"title": "Simple, transparent pricing",
+						"header_size": "h2",
+						"align": "center",
+						"title_color": "#ffffff",
+						"typography_typography": "custom",
+						"typography_font_size": { "unit": "px", "size": 38 },
+						"typography_font_weight": "800"
+					},
+					"elements": []
+				},
+				{
+					"id": "pric0003",
+					"elType": "container",
+					"settings": {
+						"flex_direction": "row",
+						"justify_content": "center",
+						"align_items": "stretch",
+						"gap": { "unit": "px", "size": 24 },
+						"padding": { "unit": "px", "top": "24", "right": "0", "bottom": "0", "left": "0" }
+					},
+					"elements": [
+						{
+							"id": "pric0004",
+							"elType": "container",
+							"settings": {
+								"background_background": "classic",
+								"background_color": "#1e293b",
+								"border_radius": { "unit": "px", "top": "16", "right": "16", "bottom": "16", "left": "16" },
+								"padding": { "unit": "px", "top": "32", "right": "28", "bottom": "32", "left": "28" },
+								"flex_direction": "column",
+								"gap": { "unit": "px", "size": 12 }
+							},
+							"elements": [
+								{
+									"id": "pric0005",
+									"elType": "widget",
+									"widgetType": "heading",
+									"settings": { "title": "Starter", "header_size": "h4", "title_color": "#e2e8f0", "typography_typography": "custom", "typography_font_size": { "unit": "px", "size": 18 }, "typography_font_weight": "600" },
+									"elements": []
+								},
+								{
+									"id": "pric0006",
+									"elType": "widget",
+									"widgetType": "heading",
+									"settings": { "title": "$0", "header_size": "h2", "title_color": "#ffffff", "typography_typography": "custom", "typography_font_size": { "unit": "px", "size": 44 }, "typography_font_weight": "800" },
+									"elements": []
+								},
+								{
+									"id": "pric0007",
+									"elType": "widget",
+									"widgetType": "text-editor",
+									"settings": { "editor": "<p>For individuals getting started.</p>", "text_color": "#94a3b8" },
+									"elements": []
+								},
+								{
+									"id": "pric0008",
+									"elType": "widget",
+									"widgetType": "button",
+									"settings": { "text": "Get started", "button_text": "Get started", "button_link": { "url": "#" }, "background_color": "#334155", "button_text_color": "#ffffff", "border_radius": { "unit": "px", "top": "8", "right": "8", "bottom": "8", "left": "8" }, "text_padding": { "unit": "px", "top": "14", "right": "20", "bottom": "14", "left": "20" } },
+									"elements": []
+								}
+							]
+						},
+						{
+							"id": "pric0009",
+							"elType": "container",
+							"settings": {
+								"background_background": "classic",
+								"background_color": "#4f46e5",
+								"border_radius": { "unit": "px", "top": "16", "right": "16", "bottom": "16", "left": "16" },
+								"padding": { "unit": "px", "top": "40", "right": "28", "bottom": "40", "left": "28" },
+								"flex_direction": "column",
+								"gap": { "unit": "px", "size": 12 }
+							},
+							"elements": [
+								{
+									"id": "pric0010",
+									"elType": "widget",
+									"widgetType": "heading",
+									"settings": { "title": "Pro · Most popular", "header_size": "h4", "title_color": "#e0e7ff", "typography_typography": "custom", "typography_font_size": { "unit": "px", "size": 18 }, "typography_font_weight": "700" },
+									"elements": []
+								},
+								{
+									"id": "pric0011",
+									"elType": "widget",
+									"widgetType": "heading",
+									"settings": { "title": "$29", "header_size": "h2", "title_color": "#ffffff", "typography_typography": "custom", "typography_font_size": { "unit": "px", "size": 48 }, "typography_font_weight": "800" },
+									"elements": []
+								},
+								{
+									"id": "pric0012",
+									"elType": "widget",
+									"widgetType": "text-editor",
+									"settings": { "editor": "<p>For growing teams that need more.</p>", "text_color": "#c7d2fe" },
+									"elements": []
+								},
+								{
+									"id": "pric0013",
+									"elType": "widget",
+									"widgetType": "button",
+									"settings": { "text": "Start free trial", "button_text": "Start free trial", "button_link": { "url": "#" }, "background_color": "#ffffff", "button_text_color": "#4f46e5", "border_radius": { "unit": "px", "top": "8", "right": "8", "bottom": "8", "left": "8" }, "text_padding": { "unit": "px", "top": "14", "right": "20", "bottom": "14", "left": "20" }, "typography_typography": "custom", "typography_font_weight": "700" },
+									"elements": []
+								}
+							]
+						},
+						{
+							"id": "pric0014",
+							"elType": "container",
+							"settings": {
+								"background_background": "classic",
+								"background_color": "#1e293b",
+								"border_radius": { "unit": "px", "top": "16", "right": "16", "bottom": "16", "left": "16" },
+								"padding": { "unit": "px", "top": "32", "right": "28", "bottom": "32", "left": "28" },
+								"flex_direction": "column",
+								"gap": { "unit": "px", "size": 12 }
+							},
+							"elements": [
+								{
+									"id": "pric0015",
+									"elType": "widget",
+									"widgetType": "heading",
+									"settings": { "title": "Enterprise", "header_size": "h4", "title_color": "#e2e8f0", "typography_typography": "custom", "typography_font_size": { "unit": "px", "size": 18 }, "typography_font_weight": "600" },
+									"elements": []
+								},
+								{
+									"id": "pric0016",
+									"elType": "widget",
+									"widgetType": "heading",
+									"settings": { "title": "Custom", "header_size": "h2", "title_color": "#ffffff", "typography_typography": "custom", "typography_font_size": { "unit": "px", "size": 44 }, "typography_font_weight": "800" },
+									"elements": []
+								},
+								{
+									"id": "pric0017",
+									"elType": "widget",
+									"widgetType": "text-editor",
+									"settings": { "editor": "<p>For organizations at scale.</p>", "text_color": "#94a3b8" },
+									"elements": []
+								},
+								{
+									"id": "pric0018",
+									"elType": "widget",
+									"widgetType": "button",
+									"settings": { "text": "Contact sales", "button_text": "Contact sales", "button_link": { "url": "#" }, "background_color": "#334155", "button_text_color": "#ffffff", "border_radius": { "unit": "px", "top": "8", "right": "8", "bottom": "8", "left": "8" }, "text_padding": { "unit": "px", "top": "14", "right": "20", "bottom": "14", "left": "20" } },
+									"elements": []
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	]
+}

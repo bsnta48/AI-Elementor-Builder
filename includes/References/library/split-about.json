@@ -1,0 +1,116 @@
+{
+	"name": "Split About / Story",
+	"description": "Two-column about section: a large statement headline on the left, narrative copy with an emphasized quote on the right.",
+	"tags": ["about", "story", "split", "two-column", "editorial"],
+	"content": [
+		{
+			"id": "abou0001",
+			"elType": "container",
+			"settings": {
+				"background_background": "classic",
+				"background_color": "#ffffff",
+				"padding": { "unit": "px", "top": "96", "right": "24", "bottom": "96", "left": "24" },
+				"flex_direction": "row",
+				"align_items": "flex-start",
+				"justify_content": "space-between",
+				"gap": { "unit": "px", "size": 56 }
+			},
+			"elements": [
+				{
+					"id": "abou0002",
+					"elType": "container",
+					"settings": {
+						"flex_direction": "column",
+						"gap": { "unit": "px", "size": 8 }
+					},
+					"elements": [
+						{
+							"id": "abou0003",
+							"elType": "widget",
+							"widgetType": "heading",
+							"settings": {
+								"title": "Our story",
+								"header_size": "h6",
+								"title_color": "#059669",
+								"typography_typography": "custom",
+								"typography_font_size": { "unit": "px", "size": 14 },
+								"typography_font_weight": "700",
+								"typography_text_transform": "uppercase",
+								"typography_letter_spacing": { "unit": "px", "size": 2 }
+							},
+							"elements": []
+						},
+						{
+							"id": "abou0004",
+							"elType": "widget",
+							"widgetType": "heading",
+							"settings": {
+								"title": "It started with a simple frustration",
+								"header_size": "h2",
+								"title_color": "#0f172a",
+								"typography_typography": "custom",
+								"typography_font_size": { "unit": "px", "size": 44 },
+								"typography_font_weight": "800",
+								"typography_line_height": { "unit": "em", "size": 1.1 }
+							},
+							"elements": []
+						}
+					]
+				},
+				{
+					"id": "abou0005",
+					"elType": "container",
+					"settings": {
+						"flex_direction": "column",
+						"gap": { "unit": "px", "size": 18 }
+					},
+					"elements": [
+						{
+							"id": "abou0006",
+							"elType": "widget",
+							"widgetType": "text-editor",
+							"settings": {
+								"editor": "<p>The tools our team relied on were never built for the way we actually work. So we set out to fix that.</p>",
+								"text_color": "#475569",
+								"typography_typography": "custom",
+								"typography_font_size": { "unit": "px", "size": 18 },
+								"typography_line_height": { "unit": "em", "size": 1.7 }
+							},
+							"elements": []
+						},
+						{
+							"id": "abou0007",
+							"elType": "widget",
+							"widgetType": "blockquote",
+							"settings": {
+								"blockquote_content": "We believe great software should get out of your way.",
+								"background_color": "#ecfdf5",
+								"blockquote_border_color": "#10b981",
+								"blockquote_content_color": "#065f46",
+								"padding": { "unit": "px", "top": "20", "right": "24", "bottom": "20", "left": "24" },
+								"border_radius": { "unit": "px", "top": "8", "right": "8", "bottom": "8", "left": "8" },
+								"typography_typography": "custom",
+								"typography_font_size": { "unit": "px", "size": 20 },
+								"typography_font_weight": "600"
+							},
+							"elements": []
+						},
+						{
+							"id": "abou0008",
+							"elType": "widget",
+							"widgetType": "text-editor",
+							"settings": {
+								"editor": "<p>Today, that idea powers workflows for teams in over 60 countries.</p>",
+								"text_color": "#475569",
+								"typography_typography": "custom",
+								"typography_font_size": { "unit": "px", "size": 18 },
+								"typography_line_height": { "unit": "em", "size": 1.7 }
+							},
+							"elements": []
+						}
+					]
+				}
+			]
+		}
+	]
+}

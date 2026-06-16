@@ -1,0 +1,185 @@
+{
+	"name": "Three-Column Feature Grid",
+	"description": "Centered section heading above a three-card feature row; each card has an icon list, title and description with subtle borders.",
+	"tags": ["features", "grid", "cards", "three-column"],
+	"content": [
+		{
+			"id": "feat0001",
+			"elType": "container",
+			"settings": {
+				"background_background": "classic",
+				"background_color": "#ffffff",
+				"padding": { "unit": "px", "top": "96", "right": "24", "bottom": "96", "left": "24" },
+				"flex_direction": "column",
+				"align_items": "center",
+				"gap": { "unit": "px", "size": 16 }
+			},
+			"elements": [
+				{
+					"id": "feat0002",
+					"elType": "widget",
+					"widgetType": "heading",
+					"settings": {
+						"title": "Everything you need, nothing you don't",
+						"header_size": "h2",
+						"align": "center",
+						"title_color": "#0f172a",
+						"typography_typography": "custom",
+						"typography_font_size": { "unit": "px", "size": 38 },
+						"typography_font_weight": "800"
+					},
+					"elements": []
+				},
+				{
+					"id": "feat0003",
+					"elType": "widget",
+					"widgetType": "text-editor",
+					"settings": {
+						"editor": "<p>Powerful building blocks that work together out of the box.</p>",
+						"align": "center",
+						"text_color": "#64748b",
+						"typography_typography": "custom",
+						"typography_font_size": { "unit": "px", "size": 18 }
+					},
+					"elements": []
+				},
+				{
+					"id": "feat0004",
+					"elType": "container",
+					"settings": {
+						"flex_direction": "row",
+						"justify_content": "center",
+						"align_items": "stretch",
+						"gap": { "unit": "px", "size": 24 },
+						"padding": { "unit": "px", "top": "24", "right": "0", "bottom": "0", "left": "0" }
+					},
+					"elements": [
+						{
+							"id": "feat0005",
+							"elType": "container",
+							"settings": {
+								"background_background": "classic",
+								"background_color": "#f8fafc",
+								"border_border": "solid",
+								"border_width": { "unit": "px", "top": "1", "right": "1", "bottom": "1", "left": "1" },
+								"border_color": "#e2e8f0",
+								"border_radius": { "unit": "px", "top": "14", "right": "14", "bottom": "14", "left": "14" },
+								"padding": { "unit": "px", "top": "28", "right": "28", "bottom": "28", "left": "28" },
+								"flex_direction": "column",
+								"gap": { "unit": "px", "size": 10 }
+							},
+							"elements": [
+								{
+									"id": "feat0006",
+									"elType": "widget",
+									"widgetType": "heading",
+									"settings": {
+										"title": "Lightning fast",
+										"header_size": "h4",
+										"title_color": "#0f172a",
+										"typography_typography": "custom",
+										"typography_font_size": { "unit": "px", "size": 20 },
+										"typography_font_weight": "700"
+									},
+									"elements": []
+								},
+								{
+									"id": "feat0007",
+									"elType": "widget",
+									"widgetType": "text-editor",
+									"settings": {
+										"editor": "<p>Sub-second loads on every page, on every device.</p>",
+										"text_color": "#64748b"
+									},
+									"elements": []
+								}
+							]
+						},
+						{
+							"id": "feat0008",
+							"elType": "container",
+							"settings": {
+								"background_background": "classic",
+								"background_color": "#f8fafc",
+								"border_border": "solid",
+								"border_width": { "unit": "px", "top": "1", "right": "1", "bottom": "1", "left": "1" },
+								"border_color": "#e2e8f0",
+								"border_radius": { "unit": "px", "top": "14", "right": "14", "bottom": "14", "left": "14" },
+								"padding": { "unit": "px", "top": "28", "right": "28", "bottom": "28", "left": "28" },
+								"flex_direction": "column",
+								"gap": { "unit": "px", "size": 10 }
+							},
+							"elements": [
+								{
+									"id": "feat0009",
+									"elType": "widget",
+									"widgetType": "heading",
+									"settings": {
+										"title": "Secure by default",
+										"header_size": "h4",
+										"title_color": "#0f172a",
+										"typography_typography": "custom",
+										"typography_font_size": { "unit": "px", "size": 20 },
+										"typography_font_weight": "700"
+									},
+									"elements": []
+								},
+								{
+									"id": "feat0010",
+									"elType": "widget",
+									"widgetType": "text-editor",
+									"settings": {
+										"editor": "<p>Encryption at rest and in transit, SSO and audit logs.</p>",
+										"text_color": "#64748b"
+									},
+									"elements": []
+								}
+							]
+						},
+						{
+							"id": "feat0011",
+							"elType": "container",
+							"settings": {
+								"background_background": "classic",
+								"background_color": "#f8fafc",
+								"border_border": "solid",
+								"border_width": { "unit": "px", "top": "1", "right": "1", "bottom": "1", "left": "1" },
+								"border_color": "#e2e8f0",
+								"border_radius": { "unit": "px", "top": "14", "right": "14", "bottom": "14", "left": "14" },
+								"padding": { "unit": "px", "top": "28", "right": "28", "bottom": "28", "left": "28" },
+								"flex_direction": "column",
+								"gap": { "unit": "px", "size": 10 }
+							},
+							"elements": [
+								{
+									"id": "feat0012",
+									"elType": "widget",
+									"widgetType": "heading",
+									"settings": {
+										"title": "Scales with you",
+										"header_size": "h4",
+										"title_color": "#0f172a",
+										"typography_typography": "custom",
+										"typography_font_size": { "unit": "px", "size": 20 },
+										"typography_font_weight": "700"
+									},
+									"elements": []
+								},
+								{
+									"id": "feat0013",
+									"elType": "widget",
+									"widgetType": "text-editor",
+									"settings": {
+										"editor": "<p>From your first user to your ten-millionth, without rewrites.</p>",
+										"text_color": "#64748b"
+									},
+									"elements": []
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	]
+}

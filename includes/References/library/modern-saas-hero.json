@@ -1,0 +1,122 @@
+{
+	"name": "Modern SaaS Hero",
+	"description": "Centered hero with eyebrow label, oversized headline, supporting copy and dual CTAs over a soft gradient.",
+	"tags": ["hero", "saas", "gradient", "centered"],
+	"content": [
+		{
+			"id": "hero0001",
+			"elType": "container",
+			"settings": {
+				"content_width": "boxed",
+				"background_background": "gradient",
+				"background_color": "#eef2ff",
+				"background_color_b": "#ffffff",
+				"background_gradient_angle": { "unit": "deg", "size": 160 },
+				"background_gradient_type": "linear",
+				"padding": { "unit": "px", "top": "120", "right": "24", "bottom": "120", "left": "24" },
+				"flex_direction": "column",
+				"align_items": "center",
+				"gap": { "unit": "px", "size": 22 }
+			},
+			"elements": [
+				{
+					"id": "hero0002",
+					"elType": "widget",
+					"widgetType": "heading",
+					"settings": {
+						"title": "Built for teams who ship",
+						"header_size": "h6",
+						"align": "center",
+						"title_color": "#4f46e5",
+						"typography_typography": "custom",
+						"typography_font_size": { "unit": "px", "size": 14 },
+						"typography_font_weight": "700",
+						"typography_text_transform": "uppercase",
+						"typography_letter_spacing": { "unit": "px", "size": 2 }
+					},
+					"elements": []
+				},
+				{
+					"id": "hero0003",
+					"elType": "widget",
+					"widgetType": "heading",
+					"settings": {
+						"title": "The workspace where ideas become products",
+						"header_size": "h1",
+						"align": "center",
+						"title_color": "#0f172a",
+						"typography_typography": "custom",
+						"typography_font_size": { "unit": "px", "size": 56 },
+						"typography_font_weight": "800",
+						"typography_line_height": { "unit": "em", "size": 1.1 }
+					},
+					"elements": []
+				},
+				{
+					"id": "hero0004",
+					"elType": "widget",
+					"widgetType": "text-editor",
+					"settings": {
+						"editor": "<p>Plan, build and launch in one place. Loved by 12,000+ fast-moving teams worldwide.</p>",
+						"align": "center",
+						"text_color": "#475569",
+						"typography_typography": "custom",
+						"typography_font_size": { "unit": "px", "size": 19 },
+						"typography_line_height": { "unit": "em", "size": 1.6 }
+					},
+					"elements": []
+				},
+				{
+					"id": "hero0005",
+					"elType": "container",
+					"settings": {
+						"flex_direction": "row",
+						"justify_content": "center",
+						"align_items": "center",
+						"gap": { "unit": "px", "size": 14 },
+						"padding": { "unit": "px", "top": "10", "right": "0", "bottom": "0", "left": "0" }
+					},
+					"elements": [
+						{
+							"id": "hero0006",
+							"elType": "widget",
+							"widgetType": "button",
+							"settings": {
+								"text": "Start free trial",
+								"button_text": "Start free trial",
+								"button_link": { "url": "#" },
+								"background_color": "#4f46e5",
+								"button_text_color": "#ffffff",
+								"border_radius": { "unit": "px", "top": "10", "right": "10", "bottom": "10", "left": "10" },
+								"text_padding": { "unit": "px", "top": "16", "right": "34", "bottom": "16", "left": "34" },
+								"typography_typography": "custom",
+								"typography_font_weight": "600"
+							},
+							"elements": []
+						},
+						{
+							"id": "hero0007",
+							"elType": "widget",
+							"widgetType": "button",
+							"settings": {
+								"text": "Watch demo",
+								"button_text": "Watch demo",
+								"button_link": { "url": "#" },
+								"background_color": "#ffffff",
+								"button_text_color": "#4f46e5",
+								"border_border": "solid",
+								"border_width": { "unit": "px", "top": "1", "right": "1", "bottom": "1", "left": "1" },
+								"border_color": "#c7d2fe",
+								"border_radius": { "unit": "px", "top": "10", "right": "10", "bottom": "10", "left": "10" },
+								"text_padding": { "unit": "px", "top": "16", "right": "34", "bottom": "16", "left": "34" },
+								"typography_typography": "custom",
+								"typography_font_weight": "600"
+							},
+							"elements": []
+						}
+					]
+				}
+			]
+		}
+	]
+}

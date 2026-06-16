@@ -1,0 +1,94 @@
+{
+	"name": "Testimonial Quotes",
+	"description": "Heading plus a row of customer quote cards using styled blockquotes with author attribution.",
+	"tags": ["testimonials", "quotes", "social-proof", "blockquote"],
+	"content": [
+		{
+			"id": "test0001",
+			"elType": "container",
+			"settings": {
+				"background_background": "classic",
+				"background_color": "#f8fafc",
+				"padding": { "unit": "px", "top": "96", "right": "24", "bottom": "96", "left": "24" },
+				"flex_direction": "column",
+				"align_items": "center",
+				"gap": { "unit": "px", "size": 16 }
+			},
+			"elements": [
+				{
+					"id": "test0002",
+					"elType": "widget",
+					"widgetType": "heading",
+					"settings": {
+						"title": "Loved by teams everywhere",
+						"header_size": "h2",
+						"align": "center",
+						"title_color": "#0f172a",
+						"typography_typography": "custom",
+						"typography_font_size": { "unit": "px", "size": 38 },
+						"typography_font_weight": "800"
+					},
+					"elements": []
+				},
+				{
+					"id": "test0003",
+					"elType": "container",
+					"settings": {
+						"flex_direction": "row",
+						"justify_content": "center",
+						"align_items": "stretch",
+						"gap": { "unit": "px", "size": 24 },
+						"padding": { "unit": "px", "top": "24", "right": "0", "bottom": "0", "left": "0" }
+					},
+					"elements": [
+						{
+							"id": "test0004",
+							"elType": "widget",
+							"widgetType": "blockquote",
+							"settings": {
+								"blockquote_content": "This is the first tool our whole team actually agreed on. It just works.",
+								"author_name": "Maya Chen, Head of Product",
+								"background_color": "#ffffff",
+								"blockquote_border_color": "#4f46e5",
+								"blockquote_content_color": "#1e293b",
+								"padding": { "unit": "px", "top": "28", "right": "28", "bottom": "28", "left": "28" },
+								"border_radius": { "unit": "px", "top": "12", "right": "12", "bottom": "12", "left": "12" }
+							},
+							"elements": []
+						},
+						{
+							"id": "test0005",
+							"elType": "widget",
+							"widgetType": "blockquote",
+							"settings": {
+								"blockquote_content": "We shipped our redesign two weeks early. The ROI was obvious in the first month.",
+								"author_name": "Daniel Ortiz, CTO",
+								"background_color": "#ffffff",
+								"blockquote_border_color": "#4f46e5",
+								"blockquote_content_color": "#1e293b",
+								"padding": { "unit": "px", "top": "28", "right": "28", "bottom": "28", "left": "28" },
+								"border_radius": { "unit": "px", "top": "12", "right": "12", "bottom": "12", "left": "12" }
+							},
+							"elements": []
+						},
+						{
+							"id": "test0006",
+							"elType": "widget",
+							"widgetType": "blockquote",
+							"settings": {
+								"blockquote_content": "Support is fast, the docs are clear, and the product keeps getting better.",
+								"author_name": "Priya Nair, Founder",
+								"background_color": "#ffffff",
+								"blockquote_border_color": "#4f46e5",
+								"blockquote_content_color": "#1e293b",
+								"padding": { "unit": "px", "top": "28", "right": "28", "bottom": "28", "left": "28" },
+								"border_radius": { "unit": "px", "top": "12", "right": "12", "bottom": "12", "left": "12" }
+							},
+							"elements": []
+						}
+					]
+				}
+			]
+		}
+	]
+}
