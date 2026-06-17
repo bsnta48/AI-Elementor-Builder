@@ -1,8 +1,11 @@
 /**
  * AI Elementor Builder — Builder page behavior (vanilla JS, no jQuery).
  *
+ * "Studio" layout: left compose rail (Compose / History / Saved tabs, provider
+ * grid) + center preview stage with a JSON drawer and a bottom action bar.
+ *
  * Reads config from window.AIEB injected via wp_localize_script:
- *   { restUrl, nonce, i18n }
+ *   { restUrl, pushUrl, pushTemplateUrl, nonce, history, references, i18n }
  */
 ( function () {
 	'use strict';
@@ -22,39 +25,54 @@
 
 		var els = {
 			prompt: root.querySelector( '#aieb-prompt' ),
+			cc: root.querySelector( '#aieb-cc' ),
 			section: root.querySelector( '#aieb-section-type' ),
 			reference: root.querySelector( '#aieb-reference' ),
 			referenceDesc: root.querySelector( '#aieb-reference-desc' ),
 			templates: root.querySelectorAll( '.aieb-template-btn' ),
+			provGrid: root.querySelector( '#aieb-prov-grid' ),
+			modelName: root.querySelector( '#aieb-model-name' ),
 			image: root.querySelector( '#aieb-image' ),
+			refName: root.querySelector( '#aieb-ref-name' ),
 			imagePreview: root.querySelector( '#aieb-image-preview' ),
 			imageThumb: root.querySelector( '#aieb-image-thumb' ),
 			imageRemove: root.querySelector( '#aieb-image-remove' ),
 			generate: root.querySelector( '#aieb-generate' ),
 			frame: root.querySelector( '#aieb-preview-frame' ),
+			empty: root.querySelector( '#aieb-empty' ),
+			loading: root.querySelector( '#aieb-loading' ),
+			loadMsg: root.querySelector( '#aieb-load-msg' ),
 			json: root.querySelector( '#aieb-json' ),
+			jsonPane: root.querySelector( '#aieb-json-pane' ),
 			toggle: root.querySelector( '#aieb-toggle-json' ),
-			fullscreen: root.querySelector( '#aieb-fullscreen' ),
-			previewPane: root.querySelector( '.aieb-preview-pane' ),
-			overlay: root.querySelector( '#aieb-overlay' ),
-			notice: root.querySelector( '#aieb-notice' ),
-			noticeMsg: root.querySelector( '#aieb-notice-message' ),
-			noticeDismiss: root.querySelector( '#aieb-notice-dismiss' ),
+			canvas: root.querySelector( '#aieb-canvas' ),
+			devToggle: root.querySelector( '#aieb-dev-toggle' ),
+			segtabs: root.querySelectorAll( '.aieb-segtabs button' ),
+			panes: root.querySelectorAll( '.aieb-tabpane' ),
+			histCount: root.querySelector( '#aieb-hist-count' ),
+			histSearch: root.querySelector( '#aieb-hist-search' ),
+			historyList: root.querySelector( '#aieb-history-list' ),
+			templateHistoryList: root.querySelector( '#aieb-template-history-list' ),
 			pageSelect: root.querySelector( '#aieb-page-select' ),
 			push: root.querySelector( '#aieb-push' ),
-			pushStatus: root.querySelector( '#aieb-push-status' ),
-			historyList: root.querySelector( '#aieb-history-list' ),
 			download: root.querySelector( '#aieb-download' ),
-			downloadStatus: root.querySelector( '#aieb-download-status' ),
 			templateType: root.querySelector( '#aieb-template-type' ),
 			templateTitle: root.querySelector( '#aieb-template-title' ),
-			templateHistoryList: root.querySelector( '#aieb-template-history-list' ),
 			pushTemplate: root.querySelector( '#aieb-push-template' ),
-			pushTemplateStatus: root.querySelector( '#aieb-push-template-status' )
+			toast: root.querySelector( '#aieb-toast' ),
+			toastMsg: root.querySelector( '#aieb-toast-msg' ),
+			fullscreen: root.querySelector( '#aieb-fullscreen' ),
+			fsview: root.querySelector( '#aieb-fsview' ),
+			fsframe: root.querySelector( '#aieb-fsframe' ),
+			fsExit: root.querySelector( '#aieb-fs-exit' ),
+			fsDev: root.querySelector( '#aieb-fs-dev' )
 		};
 
 		// state.image: { data: base64-without-prefix, mime: string } or null.
-		var state = { template: null, showingJson: false, image: null };
+		var state = { template: null, showingJson: false, image: null, provider: '', fullscreen: false };
+
+		// state.image: { data: base64-without-prefix, mime: string } or null.
+		var state = { template: null, showingJson: false, image: null, provider: '' };
 		var history = Array.isArray( cfg.history ) ? cfg.history.slice() : [];
 
 		var TEMPLATE_HISTORY_KEY = 'aeb_template_history';
@@ -63,47 +81,177 @@
 		// Cap reference images at 5 MB to keep request payloads sane.
 		var MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
-		els.generate.addEventListener( 'click', onGenerate );
-		els.toggle.addEventListener( 'click', onToggleJson );
-		if ( els.fullscreen ) {
-			els.fullscreen.addEventListener( 'click', toggleFullscreen );
-		}
-		document.addEventListener( 'keydown', function ( e ) {
-			if ( 'Escape' === e.key && els.previewPane && els.previewPane.classList.contains( 'aieb-fs' ) ) {
-				toggleFullscreen();
-			}
-		} );
-		if ( els.noticeDismiss ) {
-			els.noticeDismiss.addEventListener( 'click', hideNotice );
-		}
+		// Rotating status lines shown while a generation request is in flight.
+		var STEPS = [
+			'Reading your prompt…',
+			'Drafting layout…',
+			'Composing sections…',
+			'Styling with theme tokens…',
+			'Building Elementor schema…'
+		];
+		var loadTimer = null;
 
-		Array.prototype.forEach.call( els.templates, function ( btn ) {
-			btn.addEventListener( 'click', function () {
-				onTemplate( btn );
-			} );
-		} );
-		if ( els.image ) {
-			els.image.addEventListener( 'change', onImageChange );
-		}
-		if ( els.imageRemove ) {
-			els.imageRemove.addEventListener( 'click', clearImage );
-		}
-		els.push.addEventListener( 'click', onPush );
-		els.pageSelect.addEventListener( 'change', function () {
-			setPushStatus( '' );
-			refreshPushState();
-		} );
-		if ( els.download ) {
-			els.download.addEventListener( 'click', onDownload );
-		}
-		if ( els.pushTemplate ) {
-			els.pushTemplate.addEventListener( 'click', onPushTemplate );
-		}
+		// Seed provider from the server-rendered active button.
+		var activeProv = els.provGrid && els.provGrid.querySelector( '.aieb-prov.active' );
+		state.provider = activeProv ? activeProv.getAttribute( 'data-prov' ) : '';
 
+		bindEvents();
 		loadPages();
 		renderHistory();
 		renderTemplateHistory();
 		populateReferences();
+		updateCharCount();
+
+		function bindEvents() {
+			els.generate.addEventListener( 'click', onGenerate );
+			els.toggle.addEventListener( 'click', onToggleJson );
+			els.prompt.addEventListener( 'input', updateCharCount );
+
+			Array.prototype.forEach.call( els.templates, function ( btn ) {
+				btn.addEventListener( 'click', function () {
+					onTemplate( btn );
+				} );
+			} );
+
+			// Provider grid (radio-style single select).
+			if ( els.provGrid ) {
+				Array.prototype.forEach.call( els.provGrid.querySelectorAll( '.aieb-prov' ), function ( btn ) {
+					btn.addEventListener( 'click', function () {
+						selectProvider( btn );
+					} );
+				} );
+			}
+
+			// Segmented tabs.
+			Array.prototype.forEach.call( els.segtabs, function ( btn ) {
+				btn.addEventListener( 'click', function () {
+					switchTab( btn.getAttribute( 'data-tab' ) );
+				} );
+			} );
+
+			// Device width toggle.
+			if ( els.devToggle ) {
+				Array.prototype.forEach.call( els.devToggle.querySelectorAll( 'button' ), function ( btn ) {
+					btn.addEventListener( 'click', function () {
+						Array.prototype.forEach.call( els.devToggle.querySelectorAll( 'button' ), function ( x ) {
+							x.classList.remove( 'active' );
+						} );
+						btn.classList.add( 'active' );
+						els.canvas.setAttribute( 'data-dev', btn.getAttribute( 'data-dev' ) );
+					} );
+				} );
+			}
+
+			// Empty-state seed chips.
+			Array.prototype.forEach.call( els.empty.querySelectorAll( '[data-seed]' ), function ( chip ) {
+				chip.addEventListener( 'click', function () {
+					els.prompt.value = chip.getAttribute( 'data-seed' );
+					updateCharCount();
+					switchTab( 'compose' );
+					els.prompt.focus();
+				} );
+			} );
+
+			if ( els.image ) {
+				els.image.addEventListener( 'change', onImageChange );
+			}
+			if ( els.imageRemove ) {
+				els.imageRemove.addEventListener( 'click', clearImage );
+			}
+			if ( els.histSearch ) {
+				els.histSearch.addEventListener( 'input', function () {
+					renderHistory();
+				} );
+			}
+
+			els.push.addEventListener( 'click', onPush );
+			els.pageSelect.addEventListener( 'change', refreshPushState );
+			if ( els.download ) {
+				els.download.addEventListener( 'click', onDownload );
+			}
+			if ( els.pushTemplate ) {
+				els.pushTemplate.addEventListener( 'click', onPushTemplate );
+			}
+
+			// Fullscreen toggle.
+			if ( els.fullscreen ) {
+				els.fullscreen.addEventListener( 'click', openFullscreen );
+			}
+			if ( els.fsExit ) {
+				els.fsExit.addEventListener( 'click', closeFullscreen );
+			}
+			if ( els.fsDev ) {
+				Array.prototype.forEach.call( els.fsDev.querySelectorAll( 'button' ), function ( btn ) {
+					btn.addEventListener( 'click', function () {
+						Array.prototype.forEach.call( els.fsDev.querySelectorAll( 'button' ), function ( x ) {
+							x.classList.remove( 'active' );
+						} );
+						btn.classList.add( 'active' );
+						if ( els.fsframe ) {
+							els.fsframe.setAttribute( 'data-dev', btn.getAttribute( 'data-dev' ) );
+						}
+					} );
+				} );
+			}
+			// Keyboard shortcut (F for fullscreen, Esc to exit).
+			document.addEventListener( 'keydown', function ( e ) {
+				if ( ! state.fullscreen && 'F' === e.key && ! e.ctrlKey && ! e.metaKey && ! e.altKey ) {
+					var tag = ( e.target.tagName || '' ).toUpperCase();
+					if ( 'INPUT' !== tag && 'TEXTAREA' !== tag ) {
+						e.preventDefault();
+						openFullscreen();
+					}
+				}
+				if ( state.fullscreen && 'Escape' === e.key ) {
+					e.preventDefault();
+					closeFullscreen();
+				}
+			} );
+		}
+
+		/* ---- Tabs ---- */
+
+		function switchTab( name ) {
+			Array.prototype.forEach.call( els.segtabs, function ( b ) {
+				var on = b.getAttribute( 'data-tab' ) === name;
+				b.classList.toggle( 'active', on );
+				b.setAttribute( 'aria-selected', on ? 'true' : 'false' );
+			} );
+			Array.prototype.forEach.call( els.panes, function ( p ) {
+				p.classList.toggle( 'active', p.getAttribute( 'data-pane' ) === name );
+			} );
+		}
+
+		/* ---- Provider grid ---- */
+
+		function selectProvider( btn ) {
+			Array.prototype.forEach.call( els.provGrid.querySelectorAll( '.aieb-prov' ), function ( x ) {
+				x.classList.remove( 'active' );
+				x.setAttribute( 'aria-checked', 'false' );
+			} );
+			btn.classList.add( 'active' );
+			btn.setAttribute( 'aria-checked', 'true' );
+			state.provider = btn.getAttribute( 'data-prov' );
+			if ( els.modelName ) {
+				els.modelName.textContent = btn.getAttribute( 'data-model' ) || '';
+			}
+		}
+
+		function selectProviderByKey( key ) {
+			if ( ! els.provGrid || ! key ) {
+				return;
+			}
+			var btn = els.provGrid.querySelector( '.aieb-prov[data-prov="' + key + '"]' );
+			if ( btn ) {
+				selectProvider( btn );
+			}
+		}
+
+		function updateCharCount() {
+			if ( els.cc ) {
+				els.cc.textContent = ( els.prompt.value || '' ).length;
+			}
+		}
 
 		function populateReferences() {
 			if ( ! els.reference ) {
@@ -128,8 +276,7 @@
 		}
 
 		function selectedProvider() {
-			var checked = root.querySelector( 'input[name="aieb_provider"]:checked' );
-			return checked ? checked.value : '';
+			return state.provider || '';
 		}
 
 		function buildPrompt() {
@@ -150,9 +297,15 @@
 		/* ---- Prompt templates ---- */
 
 		function onTemplate( btn ) {
+			Array.prototype.forEach.call( els.templates, function ( x ) {
+				x.classList.remove( 'active' );
+			} );
+			btn.classList.add( 'active' );
+
 			var prompt = btn.getAttribute( 'data-prompt' ) || '';
 			var section = btn.getAttribute( 'data-section' ) || '';
 			els.prompt.value = prompt;
+			updateCharCount();
 			if ( section ) {
 				var opt = els.section.querySelector( 'option[value="' + section + '"]' );
 				if ( opt ) {
@@ -165,14 +318,13 @@
 		/* ---- Reference image (base64 for vision providers) ---- */
 
 		function onImageChange() {
-			hideNotice();
 			var file = els.image.files && els.image.files[ 0 ];
 			if ( ! file ) {
 				clearImage();
 				return;
 			}
 			if ( file.size > MAX_IMAGE_BYTES ) {
-				showNotice( t( 'imageTooLarge', 'Image is too large (max 5 MB).' ) );
+				toast( t( 'imageTooLarge', 'Image is too large (max 5 MB).' ), false );
 				clearImage();
 				return;
 			}
@@ -189,9 +341,12 @@
 				};
 				els.imageThumb.src = result;
 				els.imagePreview.classList.remove( 'aieb-hidden' );
+				if ( els.refName ) {
+					els.refName.textContent = file.name;
+				}
 			};
 			reader.onerror = function () {
-				showNotice( t( 'imageReadError', 'Could not read the selected image.' ) );
+				toast( t( 'imageReadError', 'Could not read the selected image.' ), false );
 				clearImage();
 			};
 			reader.readAsDataURL( file );
@@ -208,14 +363,18 @@
 			if ( els.imagePreview ) {
 				els.imagePreview.classList.add( 'aieb-hidden' );
 			}
+			if ( els.refName ) {
+				els.refName.textContent = t( 'dropImage', 'Drop a screenshot or mockup' );
+			}
 		}
 
-		function onGenerate() {
-			hideNotice();
+		/* ---- Generate ---- */
 
+		function onGenerate() {
 			var rawPrompt = ( els.prompt.value || '' ).trim();
 			if ( ! rawPrompt ) {
-				showNotice( t( 'emptyPrompt', 'Please enter a design prompt.' ) );
+				toast( t( 'emptyPrompt', 'Please enter a design prompt.' ), false );
+				switchTab( 'compose' );
 				els.prompt.focus();
 				return;
 			}
@@ -254,10 +413,15 @@
 						var msg = ( result.data && result.data.message )
 							? result.data.message
 							: t( 'genericError', 'Generation failed. Please try again.' );
-						showNotice( msg );
+						toast( msg, false );
+						showState();
 						return;
 					}
 					renderTemplate( result.data.template );
+					toast( t( 'generated', 'Layout generated.' ), true );
+					if ( els.templateTitle && ! els.templateTitle.value ) {
+						els.templateTitle.value = 'AI Generated — ' + new Date().toLocaleDateString();
+					}
 					addHistoryEntry( {
 						prompt: rawPrompt,
 						provider: provider,
@@ -266,7 +430,8 @@
 					} );
 				} )
 				.catch( function () {
-					showNotice( t( 'networkError', 'Network error. Could not reach the server.' ) );
+					toast( t( 'networkError', 'Network error. Could not reach the server.' ), false );
+					showState();
 				} )
 				.finally( function () {
 					setLoading( false );
@@ -279,53 +444,90 @@
 			els.json.textContent = JSON.stringify( template, null, 2 );
 			els.frame.srcdoc = previewDocument( elementorJsonToHtml( template ) );
 
-			// Reset to preview view after a fresh render.
-			state.showingJson = false;
-			applyView();
+			showState( 'preview' );
 
-			// A template now exists — allow pushing.
+			// A template now exists — allow pushing/downloading.
 			refreshPushState();
 		}
 
-		function applyView() {
-			els.frame.classList.toggle( 'aieb-hidden', state.showingJson );
-			els.json.classList.toggle( 'aieb-hidden', ! state.showingJson );
-			els.toggle.textContent = state.showingJson
-				? t( 'viewPreview', 'View Preview' )
-				: t( 'viewJson', 'View JSON' );
+		// Switch the canvas between empty / loading / preview. With no argument,
+		// shows the preview when a template exists, otherwise the empty state.
+		function showState( which ) {
+			if ( ! which ) {
+				which = state.template ? 'preview' : 'empty';
+			}
+			els.empty.style.display = 'preview' === which || 'loading' === which ? 'none' : 'flex';
+			els.loading.style.display = 'loading' === which ? 'block' : 'none';
+			els.frame.classList.toggle( 'aieb-hidden', 'preview' !== which );
 		}
 
 		function onToggleJson() {
-			state.showingJson = ! state.showingJson;
-			applyView();
-		}
-
-		function toggleFullscreen() {
-			if ( ! els.previewPane ) {
+			if ( ! state.template ) {
+				toast( t( 'noTemplate', 'Generate a template before pushing.' ), false );
 				return;
 			}
-			var on = els.previewPane.classList.toggle( 'aieb-fs' );
-			document.body.classList.toggle( 'aieb-fs-lock', on );
-			els.fullscreen.setAttribute( 'aria-pressed', on ? 'true' : 'false' );
-			var icon = els.fullscreen.querySelector( '.dashicons' );
-			if ( icon ) {
-				icon.classList.toggle( 'dashicons-fullscreen-alt', ! on );
-				icon.classList.toggle( 'dashicons-fullscreen-exit-alt', on );
+			state.showingJson = ! state.showingJson;
+			els.jsonPane.classList.toggle( 'aieb-hidden', ! state.showingJson );
+			els.toggle.classList.toggle( 'primary', state.showingJson );
+		}
+
+		/* ---- Fullscreen preview ---- */
+
+		function openFullscreen() {
+			if ( ! state.template ) {
+				toast( t( 'noTemplate', 'Generate a template first.' ), false );
+				return;
+			}
+			state.fullscreen = true;
+			document.body.classList.add( 'aieb-fs-open' );
+			if ( els.fsview ) {
+				els.fsview.classList.add( 'show' );
+				els.fsview.setAttribute( 'aria-hidden', 'false' );
+			}
+			// Copy preview content to fullscreen frame.
+			if ( els.fsframe && els.frame && els.frame.srcdoc ) {
+				els.fsframe.srcdoc = els.frame.srcdoc;
+			}
+			// Sync device toggle state.
+			if ( els.devToggle && els.fsDev ) {
+				var activeDev = els.devToggle.querySelector( 'button.active' );
+				if ( activeDev ) {
+					var dev = activeDev.getAttribute( 'data-dev' );
+					Array.prototype.forEach.call( els.fsDev.querySelectorAll( 'button' ), function ( b ) {
+						b.classList.toggle( 'active', b.getAttribute( 'data-dev' ) === dev );
+					} );
+					if ( els.fsframe ) {
+						els.fsframe.setAttribute( 'data-dev', dev );
+					}
+				}
+			}
+		}
+
+		function closeFullscreen() {
+			state.fullscreen = false;
+			document.body.classList.remove( 'aieb-fs-open' );
+			if ( els.fsview ) {
+				els.fsview.classList.remove( 'show' );
+				els.fsview.setAttribute( 'aria-hidden', 'true' );
 			}
 		}
 
 		function setLoading( loading ) {
-			els.overlay.classList.toggle( 'aieb-hidden', ! loading );
 			els.generate.disabled = loading;
-		}
-
-		function showNotice( message ) {
-			els.noticeMsg.textContent = message;
-			els.notice.classList.remove( 'aieb-hidden' );
-		}
-
-		function hideNotice() {
-			els.notice.classList.add( 'aieb-hidden' );
+			if ( loading ) {
+				showState( 'loading' );
+				var i = 0;
+				var model = els.modelName ? els.modelName.textContent : '';
+				els.loadMsg.textContent = STEPS[ 0 ] + ( model ? ' · ' + model : '' );
+				clearInterval( loadTimer );
+				loadTimer = setInterval( function () {
+					i = ( i + 1 ) % STEPS.length;
+					els.loadMsg.textContent = STEPS[ i ] + ( model ? ' · ' + model : '' );
+				}, 700 );
+			} else {
+				clearInterval( loadTimer );
+				loadTimer = null;
+			}
 		}
 
 		/* ---- Page selector + Push to Elementor ---- */
@@ -362,17 +564,16 @@
 
 		function onPush() {
 			if ( ! state.template ) {
-				setPushStatus( t( 'noTemplate', 'Generate a template before pushing.' ), true );
+				toast( t( 'noTemplate', 'Generate a template before pushing.' ), false );
 				return;
 			}
 			var pageId = parseInt( els.pageSelect.value, 10 );
 			if ( ! pageId ) {
-				setPushStatus( t( 'noPage', 'Select a target page.' ), true );
+				toast( t( 'noPage', 'Select a target page.' ), false );
 				return;
 			}
 
 			els.push.disabled = true;
-			setPushStatus( '' );
 
 			wp.apiFetch( {
 				url: cfg.pushUrl,
@@ -381,23 +582,20 @@
 			} )
 				.then( function ( res ) {
 					var link = res && res.edit_url
-						? ' <a href="' + esc( res.edit_url ) + '" target="_blank" rel="noopener">' + esc( t( 'editInElementor', 'Edit in Elementor' ) ) + '</a>'
+						? '  ' + t( 'editInElementor', 'Edit in Elementor' )
 						: '';
-					els.pushStatus.innerHTML = '<span class="aieb-ok">' + esc( t( 'pushed', 'Pushed to Elementor.' ) ) + '</span>' + link;
+					toast( t( 'pushed', 'Pushed to Elementor.' ), true );
+					if ( res && res.edit_url ) {
+						window.open( res.edit_url, '_blank', 'noopener' );
+					}
 				} )
 				.catch( function ( err ) {
 					var msg = ( err && err.message ) ? err.message : t( 'pushFailed', 'Could not push to Elementor.' );
-					setPushStatus( msg, true );
+					toast( msg, false );
 				} )
 				.finally( function () {
 					refreshPushState();
 				} );
-		}
-
-		function setPushStatus( message, isError ) {
-			els.pushStatus.textContent = message || '';
-			els.pushStatus.classList.toggle( 'aieb-err', !! isError );
-			els.pushStatus.classList.toggle( 'aieb-ok', false );
 		}
 
 		/* ---- Download as Elementor template (client-side) ---- */
@@ -444,20 +642,10 @@
 			URL.revokeObjectURL( url );
 		}
 
-		function setDownloadStatus( message, isError ) {
-			if ( ! els.downloadStatus ) {
-				return;
-			}
-			els.downloadStatus.textContent = message || '';
-			els.downloadStatus.classList.toggle( 'aieb-err', !! isError );
-		}
-
 		function onDownload() {
-			setDownloadStatus( '' );
-
 			var content = contentArray( state.template );
 			if ( ! content || ! content.length ) {
-				setDownloadStatus( t( 'downloadEmpty', 'Generate a design first before downloading.' ), true );
+				toast( t( 'downloadEmpty', 'Generate a design first before downloading.' ), false );
 				return;
 			}
 
@@ -465,6 +653,7 @@
 			var type = ( els.templateType && els.templateType.value ) || 'page';
 
 			downloadElementorTemplate( content, title, type );
+			toast( t( 'downloaded', 'Template JSON downloaded.' ), true );
 
 			addTemplateHistoryEntry( {
 				title: title || 'AI Generated Template',
@@ -476,24 +665,13 @@
 
 		/* ---- Push directly into the Elementor Library (Saved Template) ---- */
 
-		function setPushTemplateStatus( message, isError ) {
-			if ( ! els.pushTemplateStatus ) {
-				return;
-			}
-			els.pushTemplateStatus.textContent = message || '';
-			els.pushTemplateStatus.classList.toggle( 'aieb-err', !! isError );
-			els.pushTemplateStatus.classList.toggle( 'aieb-ok', false );
-		}
-
 		function onPushTemplate() {
-			setPushTemplateStatus( '' );
-
 			if ( ! state.template ) {
-				setPushTemplateStatus( t( 'noTemplate', 'Generate a template before pushing.' ), true );
+				toast( t( 'noTemplate', 'Generate a template before pushing.' ), false );
 				return;
 			}
 			if ( ! cfg.pushTemplateUrl ) {
-				setPushTemplateStatus( t( 'templateFailed', 'Could not save the template.' ), true );
+				toast( t( 'templateFailed', 'Could not save the template.' ), false );
 				return;
 			}
 
@@ -501,7 +679,7 @@
 			var type = ( els.templateType && els.templateType.value ) || 'page';
 
 			els.pushTemplate.disabled = true;
-			setPushTemplateStatus( t( 'pushingTemplate', 'Saving template…' ) );
+			toast( t( 'pushingTemplate', 'Saving template…' ), true );
 
 			wp.apiFetch( {
 				url: cfg.pushTemplateUrl,
@@ -513,17 +691,14 @@
 				}
 			} )
 				.then( function ( res ) {
-					var edit = res && res.edit_url
-						? ' <a href="' + esc( res.edit_url ) + '" target="_blank" rel="noopener">' + esc( t( 'editInElementor', 'Edit in Elementor' ) ) + '</a>'
-						: '';
-					var lib = res && res.library_url
-						? ' <a href="' + esc( res.library_url ) + '" target="_blank" rel="noopener">' + esc( t( 'openLibrary', 'Open Library' ) ) + '</a>'
-						: '';
-					els.pushTemplateStatus.innerHTML = '<span class="aieb-ok">' + esc( t( 'templateSaved', 'Saved to Elementor Library.' ) ) + '</span>' + edit + lib;
+					toast( t( 'templateSaved', 'Saved to Elementor Library.' ), true );
+					if ( res && res.library_url ) {
+						window.open( res.library_url, '_blank', 'noopener' );
+					}
 				} )
 				.catch( function ( err ) {
 					var msg = ( err && err.message ) ? err.message : t( 'templateFailed', 'Could not save the template.' );
-					setPushTemplateStatus( msg, true );
+					toast( msg, false );
 				} )
 				.finally( function () {
 					refreshPushState();
@@ -564,41 +739,25 @@
 			els.templateHistoryList.innerHTML = '';
 
 			if ( ! templateHistory.length ) {
-				var empty = document.createElement( 'li' );
-				empty.className = 'aieb-history-empty';
-				empty.textContent = t( 'templateHistoryEmpty', 'No templates downloaded yet.' );
-				els.templateHistoryList.appendChild( empty );
+				els.templateHistoryList.appendChild( emptyListItem( t( 'templateHistoryEmpty', 'No templates downloaded yet.' ) ) );
 				return;
 			}
 
 			templateHistory.forEach( function ( entry, index ) {
-				var li = document.createElement( 'li' );
-				li.className = 'aieb-history-item';
-
-				var btn = document.createElement( 'button' );
-				btn.type = 'button';
-				btn.className = 'aieb-history-btn';
-				btn.title = t( 'redownload', 'Download again' );
-
-				var title = document.createElement( 'span' );
-				title.className = 'aieb-history-prompt';
-				title.textContent = entry.title || '(untitled)';
-
-				var meta = document.createElement( 'span' );
-				meta.className = 'aieb-history-meta';
-				meta.textContent = ( entry.type || 'page' ) + ' · ' + formatTime( entry.date );
-
-				btn.appendChild( title );
-				btn.appendChild( meta );
+				var btn = listItem(
+					entry.title || '(untitled)',
+					( entry.type || 'page' ),
+					formatTime( entry.date ),
+					t( 'redownload', 'Download again' )
+				);
 				btn.addEventListener( 'click', function () {
 					var item = templateHistory[ index ];
 					if ( item ) {
 						downloadElementorTemplate( item.content, item.title, item.type );
+						toast( t( 'downloaded', 'Template JSON downloaded.' ), true );
 					}
 				} );
-
-				li.appendChild( btn );
-				els.templateHistoryList.appendChild( li );
+				els.templateHistoryList.appendChild( btn );
 			} );
 		}
 
@@ -614,42 +773,71 @@
 			if ( ! els.historyList ) {
 				return;
 			}
+			if ( els.histCount ) {
+				els.histCount.textContent = history.length;
+			}
 			els.historyList.innerHTML = '';
 
-			if ( ! history.length ) {
-				var empty = document.createElement( 'li' );
-				empty.className = 'aieb-history-empty';
-				empty.textContent = t( 'historyEmpty', 'No generations yet.' );
-				els.historyList.appendChild( empty );
+			var filter = els.histSearch ? ( els.histSearch.value || '' ).toLowerCase() : '';
+			var shown = history.filter( function ( h ) {
+				return ! filter || ( h.prompt || '' ).toLowerCase().indexOf( filter ) > -1;
+			} );
+
+			if ( ! shown.length ) {
+				els.historyList.appendChild( emptyListItem( t( 'historyEmpty', 'No generations yet.' ) ) );
 				return;
 			}
 
-			history.forEach( function ( entry, index ) {
-				var li = document.createElement( 'li' );
-				li.className = 'aieb-history-item';
-
-				var btn = document.createElement( 'button' );
-				btn.type = 'button';
-				btn.className = 'aieb-history-btn';
-				btn.title = t( 'restore', 'Restore' );
-
-				var prompt = document.createElement( 'span' );
-				prompt.className = 'aieb-history-prompt';
-				prompt.textContent = entry.prompt || '(no prompt)';
-
-				var meta = document.createElement( 'span' );
-				meta.className = 'aieb-history-meta';
-				meta.textContent = ( entry.provider || '' ) + ' · ' + formatTime( entry.timestamp );
-
-				btn.appendChild( prompt );
-				btn.appendChild( meta );
+			shown.forEach( function ( entry ) {
+				var btn = listItem(
+					entry.prompt || '(no prompt)',
+					entry.provider || '',
+					formatTime( entry.timestamp ),
+					t( 'restore', 'Restore' )
+				);
 				btn.addEventListener( 'click', function () {
-					restoreEntry( history[ index ] );
+					restoreEntry( entry );
 				} );
-
-				li.appendChild( btn );
-				els.historyList.appendChild( li );
+				els.historyList.appendChild( btn );
 			} );
+		}
+
+		// Build a design ".litem" list row: title line + meta line (tag + time).
+		function listItem( title, tag, time, hint ) {
+			var btn = document.createElement( 'button' );
+			btn.type = 'button';
+			btn.className = 'aieb-litem';
+			btn.title = hint || '';
+
+			var lt = document.createElement( 'div' );
+			lt.className = 'lt';
+			lt.textContent = title;
+
+			var lm = document.createElement( 'div' );
+			lm.className = 'lm';
+			if ( tag ) {
+				var dot = document.createElement( 'span' );
+				dot.className = 'dot on';
+				lm.appendChild( dot );
+				var tagEl = document.createElement( 'span' );
+				tagEl.textContent = tag;
+				lm.appendChild( tagEl );
+			}
+			var timeEl = document.createElement( 'span' );
+			timeEl.style.marginLeft = 'auto';
+			timeEl.textContent = time || '';
+			lm.appendChild( timeEl );
+
+			btn.appendChild( lt );
+			btn.appendChild( lm );
+			return btn;
+		}
+
+		function emptyListItem( text ) {
+			var li = document.createElement( 'div' );
+			li.className = 'aieb-history-empty';
+			li.textContent = text;
+			return li;
 		}
 
 		function restoreEntry( entry ) {
@@ -658,16 +846,16 @@
 			}
 			if ( entry.prompt ) {
 				els.prompt.value = entry.prompt;
+				updateCharCount();
 			}
 			if ( entry.provider ) {
-				var radio = root.querySelector( 'input[name="aieb_provider"][value="' + entry.provider + '"]' );
-				if ( radio ) {
-					radio.checked = true;
-				}
+				selectProviderByKey( entry.provider );
 			}
 			if ( entry.json ) {
 				renderTemplate( entry.json );
 			}
+			switchTab( 'compose' );
+			toast( t( 'restored', 'Prompt loaded into composer.' ), true );
 		}
 
 		function formatTime( ts ) {
@@ -678,7 +866,93 @@
 			return d.toLocaleString();
 		}
 
+		/* ---- Toast ---- */
+
+		var toastTimer = null;
+		function toast( msg, ok ) {
+			if ( ! els.toast ) {
+				return;
+			}
+			els.toastMsg.textContent = msg;
+			var svg = els.toast.querySelector( 'svg' );
+			if ( svg ) {
+				svg.style.color = ok ? 'var(--success)' : 'var(--warn)';
+			}
+			els.toast.classList.add( 'show' );
+			clearTimeout( toastTimer );
+			toastTimer = setTimeout( function () {
+				els.toast.classList.remove( 'show' );
+			}, 2600 );
+		}
+
 		/* ---- Elementor JSON -> HTML preview ---- */
+
+		// Responsive overrides collected during a render pass, emitted as media
+		// queries in previewDocument(). Elementor breakpoints: tablet <=1024px,
+		// mobile <=767px — matching the device-toggle iframe widths.
+		var rspTablet = [];
+		var rspMobile = [];
+
+		// Build a settings "view" for a breakpoint: base keys, then any
+		// "<key>_tablet"/"<key>_mobile" override its base counterpart. Lets us
+		// reuse the desktop style builders unchanged for each breakpoint.
+		function bpView( s, suffix ) {
+			var v = {};
+			var k;
+			for ( k in s ) {
+				if ( ! /_(tablet|mobile)$/.test( k ) ) {
+					v[ k ] = s[ k ];
+				}
+			}
+			for ( k in s ) {
+				if ( k.length > suffix.length && k.slice( -suffix.length ) === suffix ) {
+					v[ k.slice( 0, -suffix.length ) ] = s[ k ];
+				}
+			}
+			return v;
+		}
+
+		function hasBp( s, suffix ) {
+			for ( var k in s ) {
+				if ( k.length > suffix.length && k.slice( -suffix.length ) === suffix ) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		// Media-query rules must beat the element's inline base style, so each
+		// declaration carries !important. Values use commas, not semicolons.
+		function important( css ) {
+			return css.split( ';' ).filter( Boolean ).map( function ( d ) {
+				return d + ' !important';
+			} ).join( ';' );
+		}
+
+		// Queue tablet/mobile overrides for one element id, reusing its desktop
+		// style builder against a per-breakpoint settings view.
+		function collectResponsive( id, s, builder ) {
+			if ( ! id ) {
+				return;
+			}
+			if ( hasBp( s, '_tablet' ) ) {
+				var t = builder( bpView( s, '_tablet' ) );
+				if ( t ) {
+					rspTablet.push( '#' + id + '{' + important( t ) + '}' );
+				}
+			}
+			if ( hasBp( s, '_mobile' ) ) {
+				var m = builder( bpView( s, '_mobile' ) );
+				if ( m ) {
+					rspMobile.push( '#' + id + '{' + important( m ) + '}' );
+				}
+			}
+		}
+
+		// Stable element id for responsive selectors; '' when missing.
+		function elId( el ) {
+			return el && el.id ? 'aieb-el-' + String( el.id ).replace( /[^a-z0-9_-]/gi, '' ) : '';
+		}
 
 		function esc( value ) {
 			var div = document.createElement( 'div' );
@@ -693,6 +967,8 @@
 		 * @return {string} HTML markup.
 		 */
 		function elementorJsonToHtml( json ) {
+			rspTablet = [];
+			rspMobile = [];
 			var elements;
 			if ( Array.isArray( json ) ) {
 				elements = json;
@@ -718,7 +994,10 @@
 			if ( 'container' === el.elType ) {
 				var s = el.settings || {};
 				var style = containerStyle( s );
-				return '<div class="aieb-c"' + ( style ? ' style="' + style + '"' : '' ) + '>' +
+				var id = elId( el );
+				collectResponsive( id, s, containerStyle );
+				return '<div class="aieb-c"' + ( id ? ' id="' + id + '"' : '' ) +
+					( style ? ' style="' + style + '"' : '' ) + '>' +
 					renderElements( el.elements ) + '</div>';
 			}
 			if ( 'widget' === el.elType ) {
@@ -871,18 +1150,22 @@
 
 		function renderWidget( el ) {
 			var s = el.settings || {};
+			var id = elId( el );
+			var idAttr = id ? ' id="' + id + '"' : '';
 
 			switch ( el.widgetType ) {
 				case 'heading':
 					// Models vary on the field name: title (Elementor canonical) or text.
 					var tag = headingTag( s.header_size || s.size );
-					return '<' + tag + styleAttr( textStyle( s, 'title_color' ) ) + '>' +
+					collectResponsive( id, s, function ( v ) { return textStyle( v, 'title_color' ); } );
+					return '<' + tag + idAttr + styleAttr( textStyle( s, 'title_color' ) ) + '>' +
 						esc( s.title || s.text || '' ) + '</' + tag + '>';
 
 				case 'text-editor':
 					// Editor markup comes from a validated provider response. Accept the
 					// canonical "editor" key plus the "content"/"text" variants models emit.
-					return '<div' + styleAttr( textStyle( s, 'text_color' ) ) + '>' +
+					collectResponsive( id, s, function ( v ) { return textStyle( v, 'text_color' ); } );
+					return '<div' + idAttr + styleAttr( textStyle( s, 'text_color' ) ) + '>' +
 						( s.editor || s.content || s.text || '' ) + '</div>';
 
 				case 'button':
@@ -893,7 +1176,9 @@
 					} else if ( s.link && 'object' === typeof s.link ) {
 						link = s.link.url || '';
 					}
-					return '<div' + styleAttr( wrapperStyle( s ) ) + '><a class="aieb-btn"' +
+					// id lives on the <a> so font/padding overrides target the button.
+					collectResponsive( id, s, buttonStyle );
+					return '<div' + styleAttr( wrapperStyle( s ) ) + '><a class="aieb-btn"' + idAttr +
 						styleAttr( buttonStyle( s ) ) + ' href="' + esc( link || '#' ) + '">' +
 						esc( btnText ) + '</a></div>';
 
@@ -964,7 +1249,8 @@
 
 				default:
 					var label = s.title || s.text || s.editor || s.content || el.widgetType || '';
-					return '<div' + styleAttr( textStyle( s, 'text_color' ) ) + '>' + esc( label ) + '</div>';
+					collectResponsive( id, s, function ( v ) { return textStyle( v, 'text_color' ); } );
+					return '<div' + idAttr + styleAttr( textStyle( s, 'text_color' ) ) + '>' + esc( label ) + '</div>';
 			}
 		}
 
@@ -986,7 +1272,17 @@
 		}
 
 		function previewDocument( bodyHtml ) {
+			// Responsive overrides gathered in the last elementorJsonToHtml() pass.
+			// Tablet first so mobile (narrower) wins where both match.
+			var media = '';
+			if ( rspTablet.length ) {
+				media += '@media (max-width:1024px){' + rspTablet.join( '' ) + '}';
+			}
+			if ( rspMobile.length ) {
+				media += '@media (max-width:767px){' + rspMobile.join( '' ) + '}';
+			}
 			return '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+				'<meta name="viewport" content="width=device-width, initial-scale=1">' +
 				'<style>' +
 				'*{box-sizing:border-box;}' +
 				'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;margin:0;padding:0;color:#1d2327;line-height:1.5;}' +
@@ -1000,6 +1296,7 @@
 				'.aieb-quote{border-left:4px solid #10b981;background:#ecfdf5;padding:20px 24px;margin:0 0 16px;border-radius:4px;}' +
 				'.aieb-quote:before{content:"\\201C";color:#10b981;font-size:28px;font-weight:700;line-height:0;vertical-align:-8px;margin-right:6px;}' +
 				'ul{padding-left:20px;}' +
+				media +
 				'</style></head><body>' + ( bodyHtml || '' ) + '</body></html>';
 		}
 	} );

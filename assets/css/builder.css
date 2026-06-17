@@ -1,478 +1,460 @@
-/**
- * AI Elementor Builder — Builder page styles.
- */
+/* ============================================================
+   AI Elementor Builder — admin "Studio" design system
+   Direction: tech-utility studio · light graphite · one azure accent
+   Scoped under .aieb-app so it never leaks into the rest of wp-admin.
+   ============================================================ */
+.aieb-app {
+	--bg:        oklch(98.5% 0.003 255);
+	--surface:   oklch(100% 0 0);
+	--surface-2: oklch(97% 0.004 255);
+	--surface-3: oklch(95% 0.005 255);
+	--fg:        oklch(23% 0.02 260);
+	--muted:     oklch(52% 0.015 260);
+	--faint:     oklch(66% 0.012 260);
+	--border:    oklch(91% 0.006 260);
+	--border-2:  oklch(86% 0.008 260);
+	--accent:    oklch(56% 0.17 252);
+	--accent-2:  oklch(48% 0.18 252);
+	--accent-weak: oklch(96% 0.025 252);
+	--success:   oklch(60% 0.14 152);
+	--success-weak: oklch(95% 0.04 152);
+	--warn:      oklch(70% 0.13 78);
+	--warn-weak: oklch(96% 0.05 80);
+	--danger:    oklch(57% 0.19 25);
 
-.aieb-builder {
-	margin-top: 16px;
+	--font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+	--font-body:    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+	--font-mono:    'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, monospace;
+
+	--r-sm: 7px;  --r-md: 10px;  --r-lg: 14px;  --r-xl: 20px;
+	--sh-1: 0 1px 2px rgba(20,24,40,.05), 0 1px 1px rgba(20,24,40,.04);
+	--sh-2: 0 4px 14px rgba(20,24,40,.08), 0 1px 3px rgba(20,24,40,.05);
+	--sh-3: 0 18px 48px rgba(20,24,40,.16), 0 2px 8px rgba(20,24,40,.08);
+	--ring: 0 0 0 3px oklch(56% 0.17 252 / .18);
+
+	background: var(--bg);
+	color: var(--fg);
+	font: 14px/1.55 var(--font-body);
+	letter-spacing: 0;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+.aieb-app *, .aieb-app *::before, .aieb-app *::after { box-sizing: border-box; }
+.aieb-app ::selection { background: var(--accent-weak); }
+.aieb-app a { color: inherit; text-decoration: none; }
+.aieb-app button, .aieb-app input, .aieb-app textarea, .aieb-app select { font: inherit; color: inherit; }
+.aieb-app button { cursor: pointer; }
+.aieb-app .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.aieb-hidden { display: none !important; }
+
+.aieb-app .eyebrow {
+	font: 600 11px/1 var(--font-mono);
+	letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
+.aieb-app h1, .aieb-app h2, .aieb-app h3 { font-family: var(--font-display); letter-spacing: -0.02em; line-height: 1.1; margin: 0; padding: 0; font-weight: 600; }
+
+/* ---- top app bar ---- */
+.aieb-appbar {
+	height: 56px; display: flex; align-items: center; gap: 16px;
+	padding: 0 20px; background: var(--surface);
+	border-bottom: 1px solid var(--border); position: sticky; top: 32px; z-index: 40;
+}
+.aieb-brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -0.01em; }
+.aieb-logo {
+	width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
+	background: linear-gradient(135deg, var(--accent), var(--accent-2));
+	color: #fff; box-shadow: var(--sh-1);
+}
+.aieb-logo svg { width: 16px; height: 16px; }
+.aieb-brand b { font-size: 14px; }
+.aieb-tag {
+	font: 600 10px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase;
+	color: var(--accent-2); background: var(--accent-weak);
+	padding: 4px 7px; border-radius: 999px; margin-left: 4px;
+}
+.aieb-spacer { flex: 1; }
+.aieb-nav { display: flex; gap: 2px; }
+.aieb-nav a {
+	padding: 7px 12px; border-radius: var(--r-sm); color: var(--muted);
+	font-weight: 510; transition: .15s; display: inline-flex; align-items: center; gap: 7px;
+}
+.aieb-nav a svg { width: 15px; height: 15px; }
+.aieb-nav a:hover { background: var(--surface-2); color: var(--fg); }
+.aieb-nav a.active { background: var(--accent-weak); color: var(--accent-2); }
+
+/* ---- buttons ---- */
+.aieb-app .btn {
+	display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+	height: 38px; padding: 0 16px; border-radius: var(--r-sm); border: 1px solid var(--border-2);
+	background: var(--surface); color: var(--fg); font-weight: 550; letter-spacing: -0.005em;
+	transition: .15s; white-space: nowrap;
+}
+.aieb-app .btn svg { width: 16px; height: 16px; }
+.aieb-app .btn:hover { background: var(--surface-2); border-color: var(--faint); }
+.aieb-app .btn:focus-visible { outline: none; box-shadow: var(--ring); }
+.aieb-app .btn.sm { height: 30px; padding: 0 11px; font-size: 12.5px; }
+.aieb-app .btn.primary {
+	background: linear-gradient(180deg, var(--accent), var(--accent-2));
+	border-color: transparent; color: #fff; box-shadow: var(--sh-1);
+}
+.aieb-app .btn.primary:hover { filter: brightness(1.05); }
+.aieb-app .btn.block { width: 100%; }
+.aieb-app .btn[disabled] { opacity: .5; pointer-events: none; }
+
+/* ---- form controls ---- */
+.aieb-app .field { display: flex; flex-direction: column; gap: 7px; }
+.aieb-app .field > label, .aieb-app .aieb-lbl {
+	font-weight: 550; font-size: 12.5px; color: var(--fg); display: flex; align-items: center; gap: 6px;
+}
+.aieb-app .hint { font-size: 12px; color: var(--faint); line-height: 1.45; margin: 0; }
+.aieb-app .input, .aieb-app textarea.input, .aieb-app select.input {
+	width: 100%; background: var(--surface); border: 1px solid var(--border-2);
+	border-radius: var(--r-sm); padding: 10px 12px; transition: .15s; color: var(--fg); margin: 0;
+	box-shadow: none; min-height: 0; line-height: 1.4;
+}
+.aieb-app .input::placeholder { color: var(--faint); }
+.aieb-app .input:focus, .aieb-app textarea.input:focus, .aieb-app select.input:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
+.aieb-app textarea.input { resize: vertical; min-height: 96px; line-height: 1.5; }
+.aieb-app .input.sm { height: 36px; padding-top: 0; padding-bottom: 0; }
+.aieb-app select.input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2375788a' stroke-width='2.2' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 11px center; padding-right: 34px; }
+
+/* ---- pills / badges / status ---- */
+.aieb-app .pill {
+	display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px;
+	border-radius: 999px; font: 600 11px/1 var(--font-mono); letter-spacing: .04em;
+	background: var(--surface-2); color: var(--muted); border: 1px solid var(--border);
+}
+.aieb-app .pill.aieb-pill-xs { height: 19px; font-size: 9.5px; padding: 0 7px; }
+.aieb-app .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); flex: none; display: inline-block; }
+.aieb-app .dot.on  { background: var(--success); box-shadow: 0 0 0 3px var(--success-weak); }
+.aieb-app .dot.off { background: var(--faint); }
+.aieb-app .dot.warn{ background: var(--warn); box-shadow: 0 0 0 3px var(--warn-weak); }
+.aieb-app .pill.ok   { color: var(--success); background: var(--success-weak); border-color: transparent; }
+.aieb-app .pill.warn { color: oklch(48% 0.12 70); background: var(--warn-weak); border-color: transparent; }
+.aieb-app .pill.accent { color: var(--accent-2); background: var(--accent-weak); border-color: transparent; }
+
+.aieb-key-badge { font: 600 11.5px/1.4 var(--font-mono); }
+.aieb-key-badge--ok { color: var(--success); }
+.aieb-key-badge--err { color: var(--danger); }
+.aieb-key-badge--pending { color: var(--muted); }
+
+/* ---- card / panel ---- */
+.aieb-app .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--sh-1); max-width: none; min-width: 0; margin: 0; padding: 0; }
+.aieb-app .card-b { padding: 18px; }
+
+/* scrollbars */
+.aieb-app .scroll { scrollbar-width: thin; scrollbar-color: var(--border-2) transparent; }
+.aieb-app .scroll::-webkit-scrollbar { width: 9px; height: 9px; }
+.aieb-app .scroll::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 99px; border: 2px solid var(--bg); }
+.aieb-app .scroll::-webkit-scrollbar-thumb:hover { background: var(--faint); }
+
+/* toast */
+.aieb-app .toast {
+	position: fixed; bottom: 22px; left: 50%; transform: translate(-50%, 20px);
+	background: var(--fg); color: var(--bg); padding: 11px 18px; border-radius: var(--r-md);
+	font-weight: 550; font-size: 13px; box-shadow: var(--sh-3); opacity: 0; pointer-events: none;
+	transition: .25s cubic-bezier(.2,.8,.2,1); z-index: 100000; display: flex; align-items: center; gap: 9px;
+}
+.aieb-app .toast.show { opacity: 1; transform: translate(-50%, 0); }
+.aieb-app .toast svg { width: 16px; height: 16px; color: var(--success); }
+
+@keyframes aieb-spin { to { transform: rotate(360deg); } }
+.aieb-app .spin { animation: aieb-spin .8s linear infinite; }
+@keyframes aieb-shimmer { 0%{background-position:-460px 0} 100%{background-position:460px 0} }
+.aieb-app .skeleton {
+	background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%);
+	background-size: 920px 100%; animation: aieb-shimmer 1.3s linear infinite; border-radius: var(--r-sm);
 }
 
-.aieb-grid {
-	display: grid;
-	grid-template-columns: 40% 60%;
-	gap: 20px;
-	align-items: start;
-}
+/* ============================================================
+   BUILDER STUDIO
+   ============================================================ */
+.aieb-studio { display: grid; grid-template-columns: 392px 1fr; height: calc(100vh - 32px - 56px); }
 
+/* left compose rail */
+.aieb-rail { border-right: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; min-height: 0; }
+.aieb-segtabs { display: flex; gap: 2px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.aieb-segtabs button {
+	flex: 1; height: 32px; border: 0; background: transparent; border-radius: var(--r-sm);
+	color: var(--muted); font-weight: 550; font-size: 12.5px; transition: .15s;
+	display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.aieb-segtabs button svg { width: 14px; height: 14px; }
+.aieb-segtabs button:hover { background: var(--surface-2); color: var(--fg); }
+.aieb-segtabs button.active { background: var(--accent-weak); color: var(--accent-2); }
+.aieb-count { font: 600 10px/1 var(--font-mono); background: var(--surface-3); color: var(--faint); padding: 3px 5px; border-radius: 99px; }
+.aieb-railbody { flex: 1; min-height: 0; overflow: auto; padding: 18px 16px 8px; }
+.aieb-tabpane { display: none; }
+.aieb-tabpane.active { display: block; }
+.aieb-group { margin-bottom: 20px; }
+.aieb-group > .aieb-lbl { margin-bottom: 9px; }
+
+.aieb-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.aieb-chip {
+	height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border-2);
+	background: var(--surface); color: var(--muted); font-weight: 550; font-size: 12.5px; transition: .15s;
+}
+.aieb-chip:hover { border-color: var(--faint); color: var(--fg); }
+.aieb-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.aieb-composer { position: relative; }
+.aieb-composer textarea { min-height: 132px; padding-bottom: 40px; }
+.aieb-composer-meta {
+	position: absolute; left: 12px; bottom: 10px; right: 12px; display: flex; align-items: center;
+	justify-content: space-between; pointer-events: none;
+}
+.aieb-cc { font: 600 11px/1 var(--font-mono); color: var(--faint); }
+
+.aieb-drop {
+	border: 1.5px dashed var(--border-2); border-radius: var(--r-md); padding: 16px;
+	display: flex; align-items: center; gap: 12px; color: var(--muted); transition: .15s; cursor: pointer; background: var(--surface-2);
+}
+.aieb-drop:hover { border-color: var(--accent); background: var(--accent-weak); color: var(--accent-2); }
+.aieb-drop svg { width: 22px; height: 22px; flex: none; }
+.aieb-drop .t { font-weight: 550; font-size: 12.5px; color: var(--fg); }
+.aieb-drop .s { font-size: 11.5px; }
+
+.aieb-image-preview { margin-top: 10px; display: flex; align-items: center; gap: 12px; }
+.aieb-image-preview img { width: 64px; height: 64px; object-fit: cover; border-radius: var(--r-sm); border: 1px solid var(--border); }
+.aieb-image-remove { border: 0; background: transparent; color: var(--danger); font-size: 12px; font-weight: 550; padding: 0; }
+.aieb-image-remove:hover { text-decoration: underline; }
+
+.aieb-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.aieb-reference-desc { margin-top: 6px; }
+
+.aieb-providers { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.aieb-prov {
+	display: flex; align-items: center; gap: 9px; padding: 10px 11px; border-radius: var(--r-sm);
+	border: 1px solid var(--border-2); background: var(--surface); transition: .15s; text-align: left; position: relative;
+}
+.aieb-prov:hover { border-color: var(--faint); }
+.aieb-prov.active { border-color: var(--accent); background: var(--accent-weak); box-shadow: var(--ring); }
+.aieb-prov .ico { width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; background: var(--surface-3); flex: none; font: 700 12px/1 var(--font-mono); color: var(--fg); }
+.aieb-prov .nm { font-weight: 600; font-size: 12.5px; line-height: 1.2; }
+.aieb-prov .st { font: 600 10px/1 var(--font-mono); color: var(--faint); margin-top: 3px; display: flex; align-items: center; gap: 5px; }
+.aieb-prov-badge { position: absolute; top: 8px; right: 9px; font: 700 8px/1 var(--font-mono); letter-spacing: .06em; color: var(--success); background: var(--success-weak); padding: 3px 5px; border-radius: 99px; }
+
+.aieb-modelbar {
+	margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+	background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 9px 11px;
+}
+.aieb-modelbar .l { font-size: 12px; color: var(--muted); }
+.aieb-modelbar .m { font: 600 12px/1 var(--font-mono); color: var(--fg); }
+
+.aieb-railfoot { padding: 12px 16px; border-top: 1px solid var(--border); background: var(--surface); }
+
+/* history + saved lists */
+.aieb-searchwrap { position: relative; margin-bottom: 12px; }
+.aieb-searchwrap input { padding-left: 32px !important; }
+.aieb-searchwrap svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--faint); }
+.aieb-searchwrap input { padding-left: 34px; }
+.aieb-history-list { margin: 0; padding: 0; list-style: none; }
+.aieb-litem {
+	width: 100%; text-align: left; padding: 11px 12px; border-radius: var(--r-sm); border: 1px solid transparent;
+	background: var(--surface-2); margin-bottom: 7px; transition: .15s; display: block;
+}
+.aieb-litem:hover { border-color: var(--border-2); background: var(--surface); box-shadow: var(--sh-1); }
+.aieb-litem .lt { font-weight: 550; font-size: 12.5px; line-height: 1.4; color: var(--fg); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.aieb-litem .lm { margin-top: 6px; display: flex; align-items: center; gap: 8px; font: 600 10.5px/1 var(--font-mono); color: var(--faint); }
+.aieb-history-empty { padding: 18px 4px; color: var(--faint); font-size: 12.5px; }
+
+/* center preview stage */
+.aieb-stage { display: flex; flex-direction: column; min-width: 0; background: var(--bg); }
+.aieb-stagebar { height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 16px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.aieb-stagebar select.input { height: 32px; padding-top: 0; padding-bottom: 0; max-width: 220px; }
+.aieb-devtoggle { display: flex; gap: 2px; background: var(--surface-2); padding: 3px; border-radius: var(--r-sm); border: 1px solid var(--border); }
+.aieb-devtoggle button { width: 32px; height: 26px; border: 0; background: transparent; border-radius: 5px; color: var(--faint); display: grid; place-items: center; transition: .15s; }
+.aieb-devtoggle button svg { width: 16px; height: 16px; }
+.aieb-devtoggle button:hover { color: var(--fg); }
+.aieb-devtoggle button.active { background: var(--surface); color: var(--accent-2); box-shadow: var(--sh-1); }
+
+.aieb-canvaswrap { flex: 1; overflow: auto; padding: 28px; display: flex; justify-content: center; }
+.aieb-canvas {
+	width: 100%; max-width: 980px; background: var(--surface); border: 1px solid var(--border);
+	border-radius: var(--r-lg); box-shadow: var(--sh-2); overflow: hidden; transition: max-width .3s cubic-bezier(.2,.8,.2,1); align-self: flex-start; min-height: 460px;
+	display: flex; flex-direction: column;
+}
+.aieb-canvas[data-dev="tablet"] { max-width: 768px; }
+.aieb-canvas[data-dev="mobile"] { max-width: 390px; }
+
+.aieb-empty { padding: 80px 40px; text-align: center; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 14px; flex: 1; justify-content: center; }
+.aieb-empty .glyph { width: 64px; height: 64px; border-radius: var(--r-lg); display: grid; place-items: center; background: var(--accent-weak); color: var(--accent-2); }
+.aieb-empty .glyph svg { width: 30px; height: 30px; }
+.aieb-empty h2 { font-size: 19px; color: var(--fg); }
+.aieb-empty p { max-width: 380px; font-size: 13.5px; }
+.aieb-ec { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; justify-content: center; }
+
+.aieb-preview-frame { width: 100%; flex: 1; border: 0; min-height: 460px; background: #fff; }
+
+/* loading state */
+.aieb-loading { display: none; padding: 36px 44px; }
+.aieb-sk { height: 14px; margin-bottom: 12px; }
+.aieb-sk-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-top: 18px; }
+.aieb-lstatus { display: flex; align-items: center; gap: 10px; margin-bottom: 26px; font: 600 12.5px/1 var(--font-mono); color: var(--accent-2); }
+.aieb-lstatus svg { width: 16px; height: 16px; }
+
+/* bottom action bar */
+.aieb-actionbar { border-top: 1px solid var(--border); background: var(--surface); padding: 12px 16px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.aieb-actionbar .aieb-ti { flex: 1; min-width: 180px; max-width: 280px; }
+.aieb-actionbar .aieb-ti .input { height: 36px; }
+.aieb-actionbar select.input.sm { max-width: 130px; }
+.aieb-grow { flex: 1; }
+
+/* json drawer */
+.aieb-jsonpane { border-top: 1px solid var(--border); background: oklch(18% 0.02 260); color: oklch(86% 0.02 150); max-height: 260px; overflow: auto; }
+.aieb-jsonpane pre { padding: 16px 20px; font: 12px/1.65 var(--font-mono); white-space: pre; margin: 0; color: inherit; }
+
+/* ============================================================
+   FULLSCREEN PREVIEW
+   ============================================================ */
+.aieb-fsview {
+	position: fixed; inset: 0; z-index: 300; background: var(--surface-2); display: flex; flex-direction: column;
+	opacity: 0; pointer-events: none; transition: opacity .2s ease;
+	z-index: 99999;
+}
+.aieb-fsview.show { opacity: 1; pointer-events: auto; }
+.aieb-fsbar {
+	height: 52px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 16px;
+	background: oklch(100% 0 0 / .82); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
+}
+.aieb-fstitle { display: flex; align-items: center; gap: 8px; font: 600 12.5px/1 var(--font-mono); color: var(--muted); }
+.aieb-fsspacer { flex: 1; }
+.aieb-fsbar .aieb-kbd {
+	font: 600 10px/1 var(--font-mono); border: 1px solid var(--border-2); border-bottom-width: 2px;
+	border-radius: 5px; padding: 3px 5px; color: var(--faint); margin-left: 4px;
+}
+.aieb-fsscroll { flex: 1; overflow: auto; display: flex; justify-content: center; padding: 0;
+	background: repeating-linear-gradient(45deg, var(--surface-2), var(--surface-2) 12px, var(--surface-3) 12px, var(--surface-3) 13px);
+}
+.aieb-fsframe {
+	width: 100%; background: var(--surface); min-height: 100%; align-self: stretch;
+	transition: max-width .3s cubic-bezier(.2,.8,.2,1); box-shadow: var(--sh-2);
+	border: 0;
+}
+.aieb-fsframe[data-dev="desktop"] { max-width: none; }
+.aieb-fsframe[data-dev="tablet"] { max-width: 834px; }
+.aieb-fsframe[data-dev="mobile"] { max-width: 414px; }
+body.aieb-fs-open { overflow: hidden; }
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+.aieb-settings-page { max-width: 920px; margin: 0 auto; padding: 32px 24px 120px; }
+.aieb-pagehead { margin-bottom: 28px; }
+.aieb-pagehead .eyebrow { margin-bottom: 8px; }
+.aieb-pagehead h1 { font-size: 28px; }
+.aieb-pagehead p { color: var(--muted); margin: 8px 0 0; max-width: 60ch; }
+
+.aieb-settings-layout { display: grid; grid-template-columns: 196px 1fr; gap: 28px; align-items: start; }
+.aieb-sidenav { position: sticky; top: 104px; display: flex; flex-direction: column; gap: 2px; }
+.aieb-sidenav a { padding: 9px 12px; border-radius: var(--r-sm); color: var(--muted); font-weight: 510; font-size: 13px; transition: .15s; display: flex; align-items: center; gap: 9px; }
+.aieb-sidenav a svg { width: 15px; height: 15px; }
+.aieb-sidenav a:hover { background: var(--surface-2); color: var(--fg); }
+.aieb-sidenav a.active { background: var(--accent-weak); color: var(--accent-2); }
+
+.aieb-block { margin-bottom: 26px; scroll-margin-top: 104px; }
+.aieb-block-h { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+.aieb-block-h h2 { font-size: 17px; }
+.aieb-block-h .meta { font-size: 12.5px; color: var(--faint); }
+
+/* provider key card */
+.aieb-prov-card { display: flex; align-items: center; gap: 16px; padding: 16px 18px; border-bottom: 1px solid var(--border); }
+.aieb-prov-card:last-child { border-bottom: 0; }
+.aieb-prov-card .id { display: flex; align-items: center; gap: 11px; width: 180px; flex: none; }
+.aieb-prov-card .ico { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--surface-3); font: 700 13px/1 var(--font-mono); color: var(--fg); flex: none; }
+.aieb-prov-card .nm { font-weight: 600; font-size: 13.5px; }
+.aieb-prov-card .sub { font-size: 11.5px; color: var(--faint); margin-top: 2px; }
+.aieb-prov-card .keyzone { flex: 1; min-width: 0; }
+.aieb-prov-card .keywrap { position: relative; }
+.aieb-prov-card .keywrap .input { padding-right: 40px; font-family: var(--font-mono); font-size: 13px; letter-spacing: .04em; }
+.aieb-prov-card .reveal { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border: 0; background: transparent; color: var(--faint); border-radius: 6px; display: grid; place-items: center; }
+.aieb-prov-card .reveal:hover { background: var(--surface-2); color: var(--fg); }
+.aieb-prov-card .reveal svg { width: 16px; height: 16px; }
+.aieb-prov-card .stat { width: 96px; flex: none; display: flex; justify-content: flex-end; }
+
+.aieb-note { display: flex; gap: 11px; padding: 13px 15px; border-radius: var(--r-md); background: var(--warn-weak); border: 1px solid oklch(88% 0.06 80); color: oklch(40% 0.08 70); font-size: 12.5px; line-height: 1.5; }
+.aieb-note svg { width: 17px; height: 17px; flex: none; margin-top: 1px; }
+.aieb-note code { font-family: var(--font-mono); background: oklch(100% 0 0 / .5); padding: 1px 6px; border-radius: 5px; }
+
+.aieb-deframe { display: grid; grid-template-columns: 220px 1fr; gap: 14px 20px; align-items: center; padding: 4px 2px; }
+.aieb-deframe > .lbl { font-size: 13px; font-weight: 550; color: var(--fg); }
+.aieb-deframe .sub { font-size: 11.5px; color: var(--faint); margin-top: 2px; font-weight: 400; }
+.aieb-deframe .sub code { font-family: var(--font-mono); }
+.aieb-deframe select.input { max-width: 280px; }
+.aieb-deframe hr.sep { border: 0; border-top: 1px solid var(--border); margin: 6px 0; grid-column: 1 / -1; }
+
+/* toggle (checkbox styled) */
+.aieb-toggle-row { display: flex; align-items: center; gap: 14px; }
+.aieb-toggle-row .tx { flex: 1; }
+.aieb-toggle-row .tt { font-weight: 600; font-size: 13.5px; }
+.aieb-toggle-row .ts { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.aieb-toggle { width: 44px; height: 26px; border-radius: 99px; background: var(--border-2); border: 0; position: relative; transition: .18s; flex: none; cursor: pointer; display: inline-block; }
+.aieb-toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: var(--sh-1); transition: .18s; }
+.aieb-toggle-input:checked + .aieb-toggle { background: var(--accent); }
+.aieb-toggle-input:checked + .aieb-toggle::after { transform: translateX(18px); }
+.aieb-toggle-input:focus-visible + .aieb-toggle { box-shadow: var(--ring); }
+
+/* sticky savebar */
+.aieb-savebar {
+	position: fixed; left: 160px; right: 0; bottom: 0; background: oklch(100% 0 0 / .82); backdrop-filter: blur(12px);
+	border-top: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 14px; z-index: 50;
+}
+.aieb-savebar .inner { max-width: 920px; margin: 0 auto; width: 100%; display: flex; align-items: center; gap: 14px; }
+.aieb-savebar .status { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.aieb-savebar .grow { flex: 1; }
+
+/* ============================================================
+   WP-ADMIN INTEGRATION (full-bleed builder, savebar offset)
+   ============================================================ */
+body.aieb-admin #wpcontent { padding-left: 0; }
+body.aieb-admin #wpbody-content { padding-bottom: 0; }
+body.aieb-admin #wpfooter { display: none; }
+
+/* builder is a full-viewport studio app */
+body.aieb-builder-screen #wpbody-content { padding-top: 0; }
+body.aieb-builder-screen #wpbody-content > .notice,
+body.aieb-builder-screen #wpbody-content > .update-nag,
+body.aieb-builder-screen #wpbody-content > .updated,
+body.aieb-builder-screen #wpbody-content > .error { display: none; }
+/* builder is a fixed-viewport app: no window scroll, appbar static (sticky would
+   anchor to this overflow:hidden box and mis-offset by the admin-bar height). */
+body.aieb-builder-screen .aieb-builder { overflow: hidden; height: calc(100vh - 32px); }
+body.aieb-builder-screen .aieb-appbar { position: static; top: auto; }
+
+/* savebar clears the admin menu */
+body.folded .aieb-savebar { left: 36px; }
 @media screen and (max-width: 960px) {
-	.aieb-grid {
-		grid-template-columns: 1fr;
-	}
-}
-
-.aieb-pane {
-	background: #fff;
-	border: 1px solid #c3c4c7;
-	border-radius: 4px;
-	padding: 16px;
-}
-
-/* Left pane */
-.aieb-field {
-	margin-bottom: 16px;
-}
-
-.aieb-field > label,
-.aieb-fieldset > legend {
-	display: block;
-	font-weight: 600;
-	margin-bottom: 6px;
-	padding: 0;
-}
-
-.aieb-field textarea {
-	width: 100%;
-	min-height: 160px;
-	resize: vertical;
-}
-
-.aieb-field select {
-	width: 100%;
-	max-width: 100%;
-}
-
-.aieb-fieldset {
-	border: 0;
-	margin: 0;
-	padding: 0;
-}
-
-.aieb-radios {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 14px;
-}
-
-.aieb-radios label {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	font-weight: 400;
-}
-
-.aieb-actions {
-	margin-top: 8px;
-}
-
-/* Right pane */
-.aieb-preview-pane {
-	display: flex;
-	flex-direction: column;
-	padding: 0;
-	overflow: hidden;
-}
-
-.aieb-preview-toolbar {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 10px 16px;
-	border-bottom: 1px solid #dcdcde;
-	background: #f6f7f7;
-}
-
-.aieb-preview-toolbar h2 {
-	margin: 0;
-	font-size: 14px;
-}
-
-.aieb-preview-tools {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.aieb-fullscreen-btn {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	padding: 0 8px;
-}
-
-.aieb-fullscreen-btn .dashicons {
-	line-height: 28px;
-}
-
-/* Fullscreen: lift the preview pane out to cover the viewport. */
-.aieb-preview-pane.aieb-fs {
-	position: fixed;
-	inset: 0;
-	z-index: 100000;
-	margin: 0;
-	border-radius: 0;
-	background: #fff;
-}
-
-.aieb-preview-pane.aieb-fs .aieb-preview-body {
-	flex: 1 1 auto;
-	min-height: 0;
-}
-
-.aieb-preview-pane.aieb-fs .aieb-preview-frame,
-.aieb-preview-pane.aieb-fs .aieb-json {
-	height: 100%;
-}
-
-/* Prevent background scroll while the fullscreen preview is open. */
-body.aieb-fs-lock {
-	overflow: hidden;
-}
-
-.aieb-preview-body {
-	position: relative;
-	min-height: 520px;
-}
-
-.aieb-preview-frame {
-	width: 100%;
-	height: 520px;
-	border: 0;
-	display: block;
-	background: #fff;
-}
-
-.aieb-json {
-	margin: 0;
-	padding: 16px;
-	height: 520px;
-	overflow: auto;
-	background: #1d2327;
-	color: #c5f0c5;
-	font-family: Consolas, Monaco, monospace;
-	font-size: 12px;
-	white-space: pre;
-	box-sizing: border-box;
-}
-
-.aieb-hidden {
-	display: none !important;
-}
-
-/* Loading overlay */
-.aieb-overlay {
-	position: absolute;
-	inset: 0;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	gap: 12px;
-	background: rgba(255, 255, 255, 0.85);
-	z-index: 10;
-}
-
-.aieb-spinner {
-	width: 36px;
-	height: 36px;
-	border: 4px solid #c3c4c7;
-	border-top-color: #2271b1;
-	border-radius: 50%;
-	animation: aieb-spin 0.8s linear infinite;
-}
-
-@keyframes aieb-spin {
-	to {
-		transform: rotate(360deg);
-	}
-}
-
-.aieb-overlay p {
-	margin: 0;
-	color: #50575e;
-}
-
-/* History */
-.aieb-history {
-	margin-top: 20px;
-	border-top: 1px solid #dcdcde;
-	padding-top: 12px;
-}
-
-.aieb-history > summary {
-	cursor: pointer;
-	font-weight: 600;
-	user-select: none;
-}
-
-.aieb-history-list {
-	margin: 12px 0 0;
-	padding: 0;
-	list-style: none;
-	max-height: 320px;
-	overflow-y: auto;
-}
-
-.aieb-history-empty {
-	color: #787c82;
-	font-style: italic;
-	padding: 6px 0;
-}
-
-.aieb-history-item {
-	margin: 0 0 6px;
-}
-
-.aieb-history-btn {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-	width: 100%;
-	text-align: left;
-	background: #f6f7f7;
-	border: 1px solid #dcdcde;
-	border-radius: 4px;
-	padding: 8px 10px;
-	cursor: pointer;
-}
-
-.aieb-history-btn:hover {
-	background: #f0f0f1;
-	border-color: #2271b1;
-}
-
-.aieb-history-prompt {
-	display: block;
-	font-weight: 500;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.aieb-history-meta {
-	font-size: 11px;
-	color: #787c82;
-}
-
-/* Push bar */
-.aieb-push-bar {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	flex-wrap: wrap;
-	padding: 12px 16px;
-	border-top: 1px solid #dcdcde;
-	background: #f6f7f7;
-}
-
-.aieb-push-bar select {
-	min-width: 200px;
-	max-width: 320px;
-}
-
-.aieb-push-status {
-	font-size: 13px;
-}
-
-.aieb-push-status.aieb-err {
-	color: #d63638;
-}
-
-.aieb-push-status .aieb-ok,
-.aieb-push-status.aieb-ok {
-	color: #00833e;
-}
-
-/* Template download bar */
-.aieb-template-bar {
-	padding: 12px 16px;
-	border-top: 1px solid #dcdcde;
-	background: #fbfbfc;
-}
-
-.aieb-template-opts {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-end;
-	gap: 16px;
-}
-
-.aieb-template-opt {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-	font-size: 12px;
-}
-
-.aieb-template-opt label {
-	font-weight: 600;
-	color: #50575e;
-}
-
-.aieb-template-opt select,
-.aieb-template-opt input[type="text"] {
-	min-width: 180px;
-}
-
-#aieb-download-status {
-	display: block;
-	margin-top: 8px;
-}
-
-/* Import hint accordion */
-.aieb-import-hint {
-	margin-top: 10px;
-}
-
-.aieb-import-hint > summary {
-	cursor: pointer;
-	color: #2271b1;
-	font-size: 12px;
-	user-select: none;
-}
-
-.aieb-import-steps {
-	margin: 8px 0 0 18px;
-	padding: 0;
-	color: #50575e;
-	font-size: 12px;
-	line-height: 1.6;
-}
-
-/* Templates sub-section in History */
-.aieb-templates-history-label {
-	display: block;
-	font-weight: 600;
-	margin: 16px 0 0;
-	padding-top: 12px;
-	border-top: 1px solid #dcdcde;
-}
-
-/* Provider badge — "Free · Offline" next to Ollama */
-.aieb-provider-badge {
-	display: inline-block;
-	margin-left: 4px;
-	padding: 1px 7px;
-	border-radius: 10px;
-	background: #edfaef;
-	color: #00833e;
-	border: 1px solid #00833e;
-	font-size: 11px;
-	font-weight: 600;
-}
-
-/* Inline notice inside a settings section */
-.aieb-inline-notice {
-	padding: 8px 12px;
-	margin: 8px 0;
-}
-
-/* API key test badge (Settings page) */
-.aieb-key-badge {
-	display: inline-block;
-	margin-left: 8px;
-	padding: 2px 8px;
-	border-radius: 3px;
-	font-size: 12px;
-	font-weight: 600;
-	vertical-align: middle;
-}
-
-.aieb-key-badge--pending {
-	color: #50575e;
-}
-
-.aieb-key-badge--ok {
-	background: #edfaef;
-	color: #00833e;
-	border: 1px solid #00833e;
-}
-
-.aieb-key-badge--err {
-	background: #fcf0f1;
-	color: #d63638;
-	border: 1px solid #d63638;
-}
-
-/* Error notice */
-.aieb-notice {
-	position: relative;
-	margin: 0 0 16px;
-}
-
-.aieb-notice .aieb-notice-dismiss {
-	position: absolute;
-	top: 0;
-	right: 1px;
-	border: none;
-	background: none;
-	cursor: pointer;
-	padding: 9px;
-	color: #787c82;
-}
-
-.aieb-notice .aieb-notice-dismiss:hover {
-	color: #d63638;
-}
-
-/* Prompt templates */
-.aieb-templates-label {
-	display: block;
-	font-weight: 600;
-	margin-bottom: 6px;
-}
-
-.aieb-templates {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 6px;
-}
-
-.aieb-templates .aieb-template-btn {
-	flex: 0 0 auto;
-}
-
-/* Field hint text */
-.aieb-field-hint {
-	margin: 0 0 6px;
-	color: #646970;
-	font-size: 12px;
-}
-
-.aieb-reference-desc {
-	margin: 6px 0 0;
-	font-style: italic;
-	color: #50575e;
-}
-.aieb-reference-desc:empty {
-	display: none;
-}
-
-/* Reference image upload */
-.aieb-image-preview {
-	margin-top: 10px;
-	display: flex;
-	align-items: flex-start;
-	gap: 10px;
-}
-
-.aieb-image-preview img {
-	max-width: 120px;
-	max-height: 120px;
-	height: auto;
-	border: 1px solid #c3c4c7;
-	border-radius: 4px;
-}
-
-.aieb-image-remove {
-	color: #d63638;
-	cursor: pointer;
+	body.auto-fold .aieb-savebar { left: 36px; }
+}
+@media screen and (max-width: 782px) {
+	.aieb-appbar { top: 46px; }
+	.aieb-savebar { left: 0; }
+	.aieb-sidenav { top: 60px; }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1080px) {
+	.aieb-studio { grid-template-columns: 340px 1fr; }
+}
+@media (max-width: 860px) {
+	.aieb-studio { grid-template-columns: 1fr; height: auto; }
+	.aieb-rail { border-right: 0; border-bottom: 1px solid var(--border); }
+	.aieb-railbody { max-height: 60vh; }
+	.aieb-canvas { min-height: 360px; }
+	/* allow the stacked layout to flow + scroll the window */
+	body.aieb-builder-screen .aieb-builder { height: auto; overflow: visible; }
+}
+@media (max-width: 760px) {
+	.aieb-settings-layout { grid-template-columns: 1fr; }
+	.aieb-sidenav { position: static; flex-direction: row; flex-wrap: wrap; }
+	.aieb-prov-card { flex-wrap: wrap; }
+	.aieb-prov-card .id { width: auto; }
+	.aieb-deframe { grid-template-columns: 1fr; gap: 6px 0; }
+	.aieb-deframe hr.sep { margin: 12px 0; }
+}
+@media (max-width: 600px) {
+	.aieb-providers, .aieb-grid2 { grid-template-columns: 1fr; }
+	.aieb-canvaswrap { padding: 14px; }
 }

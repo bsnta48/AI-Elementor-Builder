@@ -1,9 +1,11 @@
 /**
  * AI Elementor Builder — Settings page behavior.
  *
- * Wires the "Test API Key" buttons to the test-key REST endpoint and renders an
- * inline connected/failed badge. Reads config from window.AIEB_SETTINGS:
- *   { restUrl, nonce, i18n }
+ * Wires the "Test" buttons to the test-key REST endpoint, the Ollama "Test
+ * connection" probe, plus the design-shell interactions: reveal toggles, sidenav
+ * scrollspy, dirty tracking on the sticky savebar, and the mock-mode toggle.
+ *
+ * Reads config from window.AIEB_SETTINGS: { restUrl, ollamaTestUrl, nonce, i18n }
  */
 ( function () {
 	'use strict';
@@ -15,15 +17,26 @@
 		return i18n[ key ] || fallback;
 	}
 
+	var EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+	var EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17.9 17.9A10.4 10.4 0 0 1 12 19c-7 0-11-7-11-7a18.4 18.4 0 0 1 5.1-5.9M9.9 4.2A10.5 10.5 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.2 3.2M1 1l22 22M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+
 	document.addEventListener( 'DOMContentLoaded', function () {
-		var buttons = document.querySelectorAll( '.aieb-test-key' );
-		Array.prototype.forEach.call( buttons, function ( btn ) {
+		var $ = function ( s, r ) { return ( r || document ).querySelector( s ); };
+		var $$ = function ( s, r ) { return Array.prototype.slice.call( ( r || document ).querySelectorAll( s ) ); };
+
+		var form = $( '#aieb-settings-form' );
+		var saveStatus = $( '#aieb-save-status' );
+		var dirty = false;
+
+		/* ---- Test API key ---- */
+
+		$$( '.aieb-test-key' ).forEach( function ( btn ) {
 			btn.addEventListener( 'click', function () {
 				onTest( btn );
 			} );
 		} );
 
-		var ollamaBtn = document.querySelector( '.aieb-ollama-test' );
+		var ollamaBtn = $( '.aieb-ollama-test' );
 		if ( ollamaBtn ) {
 			ollamaBtn.addEventListener( 'click', function () {
 				onOllamaTest( ollamaBtn );
@@ -130,7 +143,8 @@
 			var select = document.createElement( 'select' );
 			select.id = 'ollama_model';
 			select.name = current.getAttribute( 'name' );
-			select.className = 'regular-text';
+			select.className = current.className.replace( 'mono', '' ).trim() || 'input';
+			select.style.maxWidth = '280px';
 
 			models.forEach( function ( name ) {
 				var opt = document.createElement( 'option' );
@@ -142,6 +156,7 @@
 				select.appendChild( opt );
 			} );
 
+			select.addEventListener( 'change', markDirty );
 			current.parentNode.replaceChild( select, current );
 		}
 
@@ -152,5 +167,92 @@
 			badge.textContent = text;
 			badge.className = 'aieb-key-badge aieb-key-badge--' + kind;
 		}
+
+		/* ---- Reveal key toggles ---- */
+
+		$$( '.reveal' ).forEach( function ( b ) {
+			b.innerHTML = EYE;
+			b.addEventListener( 'click', function () {
+				var inp = b.parentNode.querySelector( 'input' );
+				if ( ! inp ) {
+					return;
+				}
+				if ( 'password' === inp.type ) {
+					inp.type = 'text';
+					b.innerHTML = EYE_OFF;
+				} else {
+					inp.type = 'password';
+					b.innerHTML = EYE;
+				}
+			} );
+		} );
+
+		/* ---- Dirty tracking + savebar ---- */
+
+		function markDirty() {
+			if ( dirty || ! saveStatus ) {
+				return;
+			}
+			dirty = true;
+			saveStatus.innerHTML = '<span class="dot warn"></span>' + t( 'unsaved', 'Unsaved changes' );
+		}
+
+		$$( 'input, select, textarea', form ).forEach( function ( el ) {
+			el.addEventListener( 'input', markDirty );
+			el.addEventListener( 'change', markDirty );
+		} );
+
+		// Drop the saved-mask flag once the user edits a key field, so a real value
+		// is submitted instead of the bullets.
+		$$( '.input.pw' ).forEach( function ( i ) {
+			i.addEventListener( 'input', function () {
+				if ( i.dataset.saved ) {
+					i.removeAttribute( 'data-saved' );
+				}
+			} );
+		} );
+
+		var resetBtn = $( '#aieb-reset-btn' );
+		if ( resetBtn ) {
+			resetBtn.addEventListener( 'click', function () {
+				window.location.reload();
+			} );
+		}
+
+		// Submit handler: clear the dirty flag so the savebar reflects the save.
+		if ( form ) {
+			form.addEventListener( 'submit', function () {
+				dirty = false;
+			} );
+		}
+
+		/* ---- Sidenav scrollspy + smooth scroll ---- */
+
+		var navlinks = $$( '#aieb-sidenav a' );
+		var sections = navlinks.map( function ( a ) { return $( a.getAttribute( 'href' ) ); } );
+
+		navlinks.forEach( function ( a ) {
+			a.addEventListener( 'click', function ( e ) {
+				var el = $( a.getAttribute( 'href' ) );
+				if ( ! el ) {
+					return;
+				}
+				e.preventDefault();
+				window.scrollTo( { top: el.offsetTop - 90, behavior: 'smooth' } );
+			} );
+		} );
+
+		window.addEventListener( 'scroll', function () {
+			var y = window.scrollY + 130;
+			var cur = 0;
+			sections.forEach( function ( s, i ) {
+				if ( s && s.offsetTop <= y ) {
+					cur = i;
+				}
+			} );
+			navlinks.forEach( function ( a, i ) {
+				a.classList.toggle( 'active', i === cur );
+			} );
+		}, { passive: true } );
 	} );
 } )();

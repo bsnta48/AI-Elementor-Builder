@@ -419,6 +419,13 @@ STYLING — always include visual styling in "settings" so the design has real c
 - Button: "background_color":"#RRGGBB","button_text_color":"#ffffff","border_radius":{"unit":"px","top":"8","right":"8","bottom":"8","left":"8"},"text_padding":{"unit":"px","top":"14","right":"32","bottom":"14","left":"32"}.
 - Sizes are objects {"unit":"px","size":N}; dimensions (padding/margin/border_radius) are {"unit":"px","top","right","bottom","left"}. Pick a coherent, attractive color palette and apply it consistently.
 
+RESPONSIVE — the layout MUST adapt to tablet and mobile. Elementor stores per-breakpoint values under the SAME setting key with a "_tablet" or "_mobile" suffix; desktop is the unsuffixed key. Always provide responsive values where they matter:
+- Multi-column/row containers ("flex_direction":"row") MUST stack on mobile: add "flex_direction_mobile":"column" (and "flex_direction_tablet":"column" when 3+ columns). Reset alignment if needed (e.g. "align_items_mobile":"stretch").
+- Reduce section spacing on smaller screens: e.g. "padding":{"unit":"px","top":"80",...} with "padding_tablet":{"unit":"px","top":"56",...} and "padding_mobile":{"unit":"px","top":"40",...}.
+- Scale large typography down: a heading with "typography_font_size":{"unit":"px","size":48} should add "typography_font_size_tablet":{"unit":"px","size":36} and "typography_font_size_mobile":{"unit":"px","size":28}.
+- Shrink gaps on mobile when large: pair "gap" with "gap_mobile".
+- Suffixed keys take the SAME value shape as their base key (size objects stay size objects, dimensions stay dimension objects). Only add a suffixed key when the responsive value differs from desktop.
+
 Return the JSON object and nothing else.
 PROMPT;
 	}

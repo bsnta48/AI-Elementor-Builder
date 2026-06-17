@@ -40,6 +40,30 @@ class Menu {
 	public function register() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_filter( 'admin_body_class', array( $this, 'admin_body_class' ) );
+	}
+
+	/**
+	 * Tag the builder/settings screens with body classes so the stylesheet can
+	 * scope the full-bleed studio reset and the fixed savebar offset without
+	 * relying on the (long, fragile) WordPress slug-based body classes.
+	 *
+	 * @param string $classes Space-separated admin body classes.
+	 * @return string
+	 */
+	public function admin_body_class( $classes ) {
+		$screen = get_current_screen();
+		if ( ! $screen ) {
+			return $classes;
+		}
+
+		if ( $screen->id === $this->builder_hook ) {
+			$classes .= ' aieb-admin aieb-builder-screen';
+		} elseif ( $screen->id === $this->settings_hook ) {
+			$classes .= ' aieb-admin aieb-settings-screen';
+		}
+
+		return $classes;
 	}
 
 	/**
@@ -121,6 +145,10 @@ class Menu {
 				'i18n'    => array(
 					'emptyPrompt'  => __( 'Please enter a design prompt.', 'ai-elementor-builder' ),
 					'genericError' => __( 'Generation failed. Please try again.', 'ai-elementor-builder' ),
+					'generated'    => __( 'Layout generated.', 'ai-elementor-builder' ),
+					'downloaded'   => __( 'Template JSON downloaded.', 'ai-elementor-builder' ),
+					'restored'     => __( 'Prompt loaded into composer.', 'ai-elementor-builder' ),
+					'dropImage'    => __( 'Drop a screenshot or mockup', 'ai-elementor-builder' ),
 					'networkError' => __( 'Network error. Could not reach the server.', 'ai-elementor-builder' ),
 					'viewJson'     => __( 'View JSON', 'ai-elementor-builder' ),
 					'viewPreview'  => __( 'View Preview', 'ai-elementor-builder' ),
@@ -184,6 +212,7 @@ class Menu {
 					'networkError'    => __( 'Network error.', 'ai-elementor-builder' ),
 					'connectedModels' => __( 'Connected — %d models available', 'ai-elementor-builder' ),
 					'cannotReach'     => __( 'Cannot reach Ollama — make sure it is running', 'ai-elementor-builder' ),
+					'unsaved'         => __( 'Unsaved changes', 'ai-elementor-builder' ),
 				),
 			)
 		);
