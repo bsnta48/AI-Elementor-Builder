@@ -1,0 +1,10 @@
+# Cursor rules
+
+Before starting any task: READ `PROJECT_STATUS.md` at the repo root — it holds the live
+task state (done / in-progress / next), shared across all AI CLIs.
+
+Before you finish or stop: UPDATE `PROJECT_STATUS.md` so another agent (Claude Code,
+Codex, Gemini, Aider) can continue if this session ends or runs out of credits.
+
+Architecture and invariants are documented in `CLAUDE.md` and `AGENTS.md`. Read those for
+how the code works; keep `PROJECT_STATUS.md` for current task state only.

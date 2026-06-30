@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/PROJECT_STATUS.md\"; [ -f \"$f\" ] && { echo '=== PROJECT_STATUS.md (shared cross-CLI task state — continue from here; update before stopping) ==='; cat \"$f\"; }"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/stamp-status.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}

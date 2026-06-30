@@ -85,6 +85,81 @@ class Reference_Registry {
 	}
 
 	/**
+	 * Pick the best exemplar(s) for a request when the user did not choose one,
+	 * so every generation gets a strong few-shot anchor (not just manual picks).
+	 *
+	 * For a single-section scope, returns the one matching exemplar. For a full
+	 * page (or unknown scope), returns a diverse multi-section set so the model
+	 * learns page composition, biased by any keyword overlap with the prompt.
+	 *
+	 * @param string $scope  Inferred scope (fullpage|hero|pricing|about|features|testimonials|contact|custom|'').
+	 * @param string $prompt User prompt text (for keyword matching).
+	 * @param int    $limit  Max exemplars to return.
+	 * @return array<int,array> List of reference arrays (each incl. content).
+	 */
+	public function auto_select( string $scope, string $prompt, int $limit = 3 ): array {
+		$all = $this->all();
+		if ( empty( $all ) ) {
+			return array();
+		}
+
+		$scope = strtolower( trim( $scope ) );
+		$text  = strtolower( $scope . ' ' . $prompt );
+
+		// Section-scoped request: return the single exemplar that matches by tag/id.
+		$section_scopes = array( 'hero', 'pricing', 'about', 'features', 'testimonials', 'contact' );
+		if ( in_array( $scope, $section_scopes, true ) ) {
+			foreach ( $all as $ref ) {
+				if ( false !== strpos( $ref['id'], $scope ) || in_array( $scope, array_map( 'strtolower', $ref['tags'] ), true ) ) {
+					return array( $ref );
+				}
+			}
+		}
+
+		// Full page / unknown: score by keyword overlap, then a composition-priority
+		// bias so the default set reads like a real landing page.
+		$priority = array( 'modern-saas-hero', 'feature-grid-3col', 'pricing-3tier', 'testimonial-quotes', 'split-about', 'cta-gradient' );
+
+		$scored = array();
+		$i      = 0;
+		foreach ( $all as $id => $ref ) {
+			$score = 0;
+			foreach ( $ref['tags'] as $tag ) {
+				if ( false !== strpos( $text, strtolower( (string) $tag ) ) ) {
+					$score += 50;
+				}
+			}
+			$rank = array_search( $id, $priority, true );
+			if ( false !== $rank ) {
+				$score += ( count( $priority ) - $rank );
+			}
+			// Stable tiebreak by discovery order.
+			$scored[ $id ] = array( $score, $i );
+			++$i;
+		}
+
+		uasort(
+			$scored,
+			static function ( $a, $b ) {
+				if ( $a[0] === $b[0] ) {
+					return $a[1] <=> $b[1];
+				}
+				return $b[0] <=> $a[0];
+			}
+		);
+
+		$result = array();
+		foreach ( array_keys( $scored ) as $id ) {
+			$result[] = $all[ $id ];
+			if ( count( $result ) >= $limit ) {
+				break;
+			}
+		}
+
+		return $result;
+	}
+
+	/**
 	 * Lightweight listing for the UI — metadata only, no heavy content.
 	 *
 	 * @return array<int,array>

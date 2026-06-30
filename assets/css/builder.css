@@ -199,10 +199,6 @@
 
 .aieb-composer { position: relative; }
 .aieb-composer textarea { min-height: 132px; padding-bottom: 40px; }
-.aieb-composer-meta {
-	position: absolute; left: 12px; bottom: 10px; right: 12px; display: flex; align-items: center;
-	justify-content: space-between; pointer-events: none;
-}
 .aieb-cc { font: 600 11px/1 var(--font-mono); color: var(--faint); }
 
 .aieb-drop {
@@ -458,3 +454,109 @@ body.folded .aieb-savebar { left: 36px; }
 	.aieb-providers, .aieb-grid2 { grid-template-columns: 1fr; }
 	.aieb-canvaswrap { padding: 14px; }
 }
+
+/* ============================================================
+   Chat composer (Compose tab) — thread, messages, question cards
+   ============================================================ */
+
+.aieb-app .btn.xs { height: 26px; padding: 0 9px; font-size: 12px; gap: 5px; }
+
+/* Compose head: New chat + Options toggle */
+.aieb-chathead { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.aieb-modelchip { margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--accent-weak); color: var(--accent); font-size: 11px; font-weight: 600; }
+
+/* Collapsible options panel */
+.aieb-options { border: 1px solid var(--border); border-radius: var(--r-md); padding: 14px; margin-bottom: 14px; background: var(--bg); }
+.aieb-options.aieb-hidden { display: none; }
+.aieb-options .aieb-group { margin-bottom: 14px; }
+.aieb-options .aieb-group:last-child { margin-bottom: 0; }
+
+/* Thread */
+.aieb-thread { display: flex; flex-direction: column; gap: 12px; }
+.aieb-thread-empty { text-align: center; color: var(--muted); padding: 18px 8px; }
+.aieb-thread-empty .glyph { display: inline-flex; width: 40px; height: 40px; align-items: center; justify-content: center; color: var(--accent); margin-bottom: 8px; }
+.aieb-thread-empty .glyph svg { width: 28px; height: 28px; }
+.aieb-thread-empty p { font-size: 13px; line-height: 1.5; margin: 0 0 12px; }
+.aieb-thread-empty .aieb-chips { justify-content: center; }
+
+/* Messages */
+.aieb-msg { display: flex; }
+.aieb-msg.user { justify-content: flex-end; }
+.aieb-msg.ai { justify-content: flex-start; }
+.aieb-bubble { max-width: 88%; padding: 9px 12px; border-radius: var(--r-md); font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
+.aieb-msg.user .aieb-bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 3px; }
+.aieb-msg.ai .aieb-bubble { background: var(--surface); border: 1px solid var(--border); color: var(--fg); border-bottom-left-radius: 3px; }
+.aieb-msg.ai.err .aieb-bubble { background: var(--warn-weak); border-color: var(--warn); color: var(--fg); }
+
+/* Typing indicator */
+.aieb-msg.typing .aieb-typing-label { color: var(--muted); font-size: 12.5px; }
+.aieb-dots { display: inline-flex; gap: 3px; vertical-align: middle; }
+.aieb-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--faint); display: inline-block; animation: aieb-blink 1.2s infinite both; }
+.aieb-dots i:nth-child(2) { animation-delay: .2s; }
+.aieb-dots i:nth-child(3) { animation-delay: .4s; }
+@keyframes aieb-blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+
+/* Question card */
+.aieb-q-intro { font-weight: 600; margin-bottom: 10px; }
+.aieb-q { margin-bottom: 12px; }
+.aieb-q-title { font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+.aieb-q-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.aieb-q-opt { font-size: 12.5px; }
+.aieb-q-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.aieb-q-done { opacity: .7; }
+
+/* Chat composer in the rail foot */
+.aieb-composer2 { display: flex; align-items: flex-end; gap: 8px; }
+.aieb-composer2 textarea.input { min-height: 44px; max-height: 160px; flex: 1; resize: none; }
+.aieb-app .aieb-send { width: 40px; height: 40px; padding: 0; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; }
+.aieb-app .aieb-send svg { width: 18px; height: 18px; }
+.aieb-railfoot .aieb-composer-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 11px; color: var(--faint); }
+
+/* ============================================================
+   Design plan panel + Sessions (Chats) list
+   ============================================================ */
+
+/* Plan / brief panel */
+.aieb-plan { border: 1px solid var(--border); border-radius: var(--r-md); padding: 14px; margin-top: 14px; background: var(--surface); }
+.aieb-plan.aieb-hidden { display: none; }
+.aieb-plan-head { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; margin-bottom: 10px; }
+.aieb-plan-head svg { width: 16px; height: 16px; color: var(--accent); }
+.aieb-plan textarea.input { min-height: 120px; resize: vertical; margin-bottom: 10px; font-size: 12.5px; line-height: 1.55; }
+.aieb-app .btn.block { width: 100%; justify-content: center; }
+
+/* Generate-design pulse when the plan is ready */
+@keyframes aieb-pulse { 0%,100% { box-shadow: 0 0 0 0 var(--ring); } 50% { box-shadow: 0 0 0 4px transparent; } }
+.aieb-pulse { animation: aieb-pulse 1.4s ease-in-out 3; }
+
+/* Session rows in the Chats tab */
+.aieb-session { display: flex; align-items: stretch; gap: 4px; padding: 0; }
+.aieb-session.active { border-color: var(--accent); }
+.aieb-session-open { flex: 1; min-width: 0; text-align: left; background: none; border: 0; padding: 9px 11px; cursor: pointer; color: inherit; font: inherit; display: block; }
+.aieb-session-open .lt { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.aieb-session-open .lm { display: flex; gap: 6px; font-size: 11px; color: var(--faint); margin-top: 3px; }
+.aieb-litem-del { flex: 0 0 auto; width: 34px; border: 0; background: none; color: var(--faint); cursor: pointer; border-radius: var(--r-sm); }
+.aieb-litem-del:hover { color: var(--danger); background: var(--danger-weak, rgba(0,0,0,.04)); }
+.aieb-litem-del svg { width: 15px; height: 15px; }
+
+/* ============================================================
+   Composer attach menu + reference-image chip
+   ============================================================ */
+
+.aieb-attach-wrap { position: relative; flex: 0 0 auto; }
+.aieb-app .aieb-attach { width: 40px; height: 40px; padding: 0; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; }
+.aieb-app .aieb-attach svg { width: 18px; height: 18px; }
+.aieb-app .aieb-attach.active { color: var(--accent); border-color: var(--accent); }
+
+.aieb-attach-menu { position: absolute; bottom: calc(100% + 6px); left: 0; min-width: 210px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); box-shadow: var(--sh-2); padding: 6px; z-index: 30; }
+.aieb-attach-menu.aieb-hidden { display: none; }
+.aieb-attach-item { display: flex; align-items: center; gap: 9px; width: 100%; padding: 8px 10px; border: 0; background: none; border-radius: var(--r-sm); cursor: pointer; font: inherit; font-size: 13px; color: var(--fg); text-align: left; }
+.aieb-attach-item:hover { background: var(--accent-weak); color: var(--accent); }
+.aieb-attach-item svg { width: 16px; height: 16px; flex: 0 0 auto; }
+
+/* Attached-image chip above the composer */
+.aieb-image-chip { display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg); }
+.aieb-image-chip.aieb-hidden { display: none; }
+.aieb-image-chip img { width: 34px; height: 34px; object-fit: cover; border-radius: var(--r-sm); flex: 0 0 auto; }
+.aieb-image-chip-name { flex: 1; min-width: 0; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.aieb-image-chip .aieb-image-remove { flex: 0 0 auto; width: 24px; height: 24px; border: 0; background: none; color: var(--faint); font-size: 18px; line-height: 1; cursor: pointer; border-radius: var(--r-sm); }
+.aieb-image-chip .aieb-image-remove:hover { color: var(--danger); }

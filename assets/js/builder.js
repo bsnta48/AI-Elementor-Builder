@@ -26,13 +26,20 @@
 		var els = {
 			prompt: root.querySelector( '#aieb-prompt' ),
 			cc: root.querySelector( '#aieb-cc' ),
-			section: root.querySelector( '#aieb-section-type' ),
-			reference: root.querySelector( '#aieb-reference' ),
-			referenceDesc: root.querySelector( '#aieb-reference-desc' ),
-			templates: root.querySelectorAll( '.aieb-template-btn' ),
+			thread: root.querySelector( '#aieb-thread' ),
+			threadEmpty: root.querySelector( '#aieb-thread-empty' ),
+			newChat: root.querySelector( '#aieb-new-chat' ),
+			optsToggle: root.querySelector( '#aieb-opts-toggle' ),
+			options: root.querySelector( '#aieb-options' ),
+			plan: root.querySelector( '#aieb-plan' ),
+			brief: root.querySelector( '#aieb-brief' ),
+			generateDesign: root.querySelector( '#aieb-generate-design' ),
 			provGrid: root.querySelector( '#aieb-prov-grid' ),
 			modelName: root.querySelector( '#aieb-model-name' ),
 			image: root.querySelector( '#aieb-image' ),
+			attach: root.querySelector( '#aieb-attach' ),
+			attachMenu: root.querySelector( '#aieb-attach-menu' ),
+			attachImage: root.querySelector( '#aieb-attach-image' ),
 			refName: root.querySelector( '#aieb-ref-name' ),
 			imagePreview: root.querySelector( '#aieb-image-preview' ),
 			imageThumb: root.querySelector( '#aieb-image-thumb' ),
@@ -55,6 +62,8 @@
 			templateHistoryList: root.querySelector( '#aieb-template-history-list' ),
 			pageSelect: root.querySelector( '#aieb-page-select' ),
 			push: root.querySelector( '#aieb-push' ),
+			pushGutenberg: root.querySelector( '#aieb-push-gutenberg' ),
+			savePattern: root.querySelector( '#aieb-save-pattern' ),
 			download: root.querySelector( '#aieb-download' ),
 			templateType: root.querySelector( '#aieb-template-type' ),
 			templateTitle: root.querySelector( '#aieb-template-title' ),
@@ -69,11 +78,34 @@
 		};
 
 		// state.image: { data: base64-without-prefix, mime: string } or null.
-		var state = { template: null, showingJson: false, image: null, provider: '', fullscreen: false };
+		// state.busy: a request is in flight. state.awaitingAnswers: a clarify
+		// question card is open and we should not refine on the next send.
+		// scope: build framing ('fullpage' | section name | '' = let the model decide),
+		// set by the clarify step. reference: chosen few-shot exemplar id ('' = none),
+		// picked via a clarify question rather than a manual dropdown.
+		var state = {
+			template: null,
+			showingJson: false,
+			image: null,
+			provider: '',
+			scope: '',
+			reference: '',
+			fullscreen: false,
+			busy: false,
+			awaitingAnswers: false,
+			// Conversational planning + session persistence.
+			sessionId: null,
+			messages: [],
+			brief: '',
+			creating: null
+		};
 
-		// state.image: { data: base64-without-prefix, mime: string } or null.
-		var state = { template: null, showingJson: false, image: null, provider: '' };
-		var history = Array.isArray( cfg.history ) ? cfg.history.slice() : [];
+		// Loaded session list (for the Chats tab) + debounce handle.
+		var sessions = [];
+		var saveTimer = null;
+		// Curated design references (id/name/description), offered as a "match style"
+		// option inside the clarify question card.
+		var refList = Array.isArray( cfg.references ) ? cfg.references : [];
 
 		var TEMPLATE_HISTORY_KEY = 'aeb_template_history';
 		var templateHistory = loadTemplateHistory();
@@ -97,21 +129,32 @@
 
 		bindEvents();
 		loadPages();
-		renderHistory();
+		loadSessions();
 		renderTemplateHistory();
-		populateReferences();
 		updateCharCount();
 
 		function bindEvents() {
-			els.generate.addEventListener( 'click', onGenerate );
+			els.generate.addEventListener( 'click', onSend );
 			els.toggle.addEventListener( 'click', onToggleJson );
 			els.prompt.addEventListener( 'input', updateCharCount );
 
-			Array.prototype.forEach.call( els.templates, function ( btn ) {
-				btn.addEventListener( 'click', function () {
-					onTemplate( btn );
-				} );
+			// Enter sends; Shift+Enter inserts a newline.
+			els.prompt.addEventListener( 'keydown', function ( e ) {
+				if ( 'Enter' === e.key && ! e.shiftKey ) {
+					e.preventDefault();
+					onSend();
+				}
 			} );
+
+			if ( els.newChat ) {
+				els.newChat.addEventListener( 'click', resetChat );
+			}
+			if ( els.optsToggle && els.options ) {
+				els.optsToggle.addEventListener( 'click', function () {
+					var open = els.options.classList.toggle( 'aieb-hidden' );
+					els.optsToggle.setAttribute( 'aria-expanded', open ? 'false' : 'true' );
+				} );
+			}
 
 			// Provider grid (radio-style single select).
 			if ( els.provGrid ) {
@@ -142,13 +185,21 @@
 				} );
 			}
 
-			// Empty-state seed chips.
-			Array.prototype.forEach.call( els.empty.querySelectorAll( '[data-seed]' ), function ( chip ) {
+			// Seed chips (center empty-state + thread empty-state): drop the text in
+			// the composer, switch to Compose, and send it.
+			var seedChips = [];
+			if ( els.empty ) {
+				seedChips = seedChips.concat( Array.prototype.slice.call( els.empty.querySelectorAll( '[data-seed]' ) ) );
+			}
+			if ( els.threadEmpty ) {
+				seedChips = seedChips.concat( Array.prototype.slice.call( els.threadEmpty.querySelectorAll( '[data-seed]' ) ) );
+			}
+			seedChips.forEach( function ( chip ) {
 				chip.addEventListener( 'click', function () {
 					els.prompt.value = chip.getAttribute( 'data-seed' );
 					updateCharCount();
 					switchTab( 'compose' );
-					els.prompt.focus();
+					onSend();
 				} );
 			} );
 
@@ -158,13 +209,53 @@
 			if ( els.imageRemove ) {
 				els.imageRemove.addEventListener( 'click', clearImage );
 			}
+
+			// Attach menu in the composer: toggle dropdown, pick file, close on outside click.
+			if ( els.attach && els.attachMenu ) {
+				els.attach.addEventListener( 'click', function ( e ) {
+					e.stopPropagation();
+					var open = els.attachMenu.classList.toggle( 'aieb-hidden' );
+					els.attach.setAttribute( 'aria-expanded', open ? 'false' : 'true' );
+				} );
+				document.addEventListener( 'click', function ( e ) {
+					if ( ! els.attachMenu.classList.contains( 'aieb-hidden' ) &&
+						! els.attachMenu.contains( e.target ) && e.target !== els.attach ) {
+						els.attachMenu.classList.add( 'aieb-hidden' );
+						els.attach.setAttribute( 'aria-expanded', 'false' );
+					}
+				} );
+			}
+			if ( els.attachImage && els.image ) {
+				els.attachImage.addEventListener( 'click', function () {
+					els.attachMenu.classList.add( 'aieb-hidden' );
+					els.attach.setAttribute( 'aria-expanded', 'false' );
+					els.image.click();
+				} );
+			}
 			if ( els.histSearch ) {
 				els.histSearch.addEventListener( 'input', function () {
-					renderHistory();
+					renderSessions();
+				} );
+			}
+
+			// Plan panel: finalize → generate; edits to the brief are persisted.
+			if ( els.generateDesign ) {
+				els.generateDesign.addEventListener( 'click', onGenerateDesign );
+			}
+			if ( els.brief ) {
+				els.brief.addEventListener( 'input', function () {
+					state.brief = els.brief.value;
+					persistSession();
 				} );
 			}
 
 			els.push.addEventListener( 'click', onPush );
+			if ( els.pushGutenberg ) {
+				els.pushGutenberg.addEventListener( 'click', onPushGutenberg );
+			}
+			if ( els.savePattern ) {
+				els.savePattern.addEventListener( 'click', onSavePattern );
+			}
 			els.pageSelect.addEventListener( 'change', refreshPushState );
 			if ( els.download ) {
 				els.download.addEventListener( 'click', onDownload );
@@ -253,66 +344,25 @@
 			}
 		}
 
-		function populateReferences() {
-			if ( ! els.reference ) {
-				return;
-			}
-			var refs = Array.isArray( cfg.references ) ? cfg.references : [];
-			refs.forEach( function ( ref ) {
-				var opt = document.createElement( 'option' );
-				opt.value = ref.id;
-				opt.textContent = ref.name || ref.id;
-				els.reference.appendChild( opt );
-			} );
-			els.reference.addEventListener( 'change', function () {
-				if ( ! els.referenceDesc ) {
-					return;
-				}
-				var found = refs.filter( function ( r ) {
-					return r.id === els.reference.value;
-				} )[ 0 ];
-				els.referenceDesc.textContent = found ? ( found.description || '' ) : '';
-			} );
-		}
-
 		function selectedProvider() {
 			return state.provider || '';
 		}
 
-		function buildPrompt() {
-			var section = els.section.value;
-			var text = ( els.prompt.value || '' ).trim();
-			if ( 'fullpage' === section ) {
+		// Wrap a brief in scope framing based on state.scope (set by the clarify
+		// step), so the model knows whether to build a full page or a single section.
+		function wrapScope( text ) {
+			var scope = state.scope || '';
+			text = ( text || '' ).trim();
+			if ( 'fullpage' === scope ) {
 				return 'Generate a COMPLETE, multi-section Elementor landing page (not a single section). ' +
 					'Include several stacked top-level section containers — typically a hero, then features, ' +
 					'about, testimonials, pricing or call-to-action, and a footer-style closing section — each ' +
 					'as its own top-level container with appropriate content and styling. ' + text;
 			}
-			if ( 'custom' === section || ! section ) {
+			if ( 'custom' === scope || ! scope ) {
 				return text;
 			}
-			return 'Generate an Elementor "' + section + '" section. ' + text;
-		}
-
-		/* ---- Prompt templates ---- */
-
-		function onTemplate( btn ) {
-			Array.prototype.forEach.call( els.templates, function ( x ) {
-				x.classList.remove( 'active' );
-			} );
-			btn.classList.add( 'active' );
-
-			var prompt = btn.getAttribute( 'data-prompt' ) || '';
-			var section = btn.getAttribute( 'data-section' ) || '';
-			els.prompt.value = prompt;
-			updateCharCount();
-			if ( section ) {
-				var opt = els.section.querySelector( 'option[value="' + section + '"]' );
-				if ( opt ) {
-					els.section.value = section;
-				}
-			}
-			els.prompt.focus();
+			return 'Generate an Elementor "' + scope + '" section. ' + text;
 		}
 
 		/* ---- Reference image (base64 for vision providers) ---- */
@@ -344,6 +394,9 @@
 				if ( els.refName ) {
 					els.refName.textContent = file.name;
 				}
+				if ( els.attach ) {
+					els.attach.classList.add( 'active' );
+				}
 			};
 			reader.onerror = function () {
 				toast( t( 'imageReadError', 'Could not read the selected image.' ), false );
@@ -364,37 +417,33 @@
 				els.imagePreview.classList.add( 'aieb-hidden' );
 			}
 			if ( els.refName ) {
-				els.refName.textContent = t( 'dropImage', 'Drop a screenshot or mockup' );
+				els.refName.textContent = t( 'dropImage', 'Reference image' );
+			}
+			if ( els.attach ) {
+				els.attach.classList.remove( 'active' );
 			}
 		}
 
-		/* ---- Generate ---- */
+		/* ---- Chat orchestration ----
+		 * One thread drives three calls:
+		 *   /clarify  — vague first prompt → questions (with option chips)
+		 *   /generate — build a template from a (possibly enriched) brief
+		 *   /refine   — modify the current template from a follow-up instruction
+		 */
 
-		function onGenerate() {
-			var rawPrompt = ( els.prompt.value || '' ).trim();
-			if ( ! rawPrompt ) {
-				toast( t( 'emptyPrompt', 'Please enter a design prompt.' ), false );
-				switchTab( 'compose' );
-				els.prompt.focus();
-				return;
+		function setBusy( busy ) {
+			state.busy = busy;
+			if ( els.generate ) {
+				els.generate.disabled = busy;
 			}
-
-			var provider = selectedProvider();
-			setLoading( true );
-
-			var payload = {
-				provider: provider,
-				prompt: buildPrompt()
-			};
-			if ( els.reference && els.reference.value ) {
-				payload.reference = els.reference.value;
+			if ( els.prompt ) {
+				els.prompt.disabled = busy;
 			}
-			if ( state.image && state.image.data ) {
-				payload.image = state.image.data;
-				payload.image_mime = state.image.mime;
-			}
+		}
 
-			fetch( cfg.restUrl, {
+		// JSON POST helper → resolves { ok, data }.
+		function apiPost( url, payload ) {
+			return fetch( url, {
 				method: 'POST',
 				credentials: 'same-origin',
 				headers: {
@@ -402,40 +451,703 @@
 					'X-WP-Nonce': cfg.nonce
 				},
 				body: JSON.stringify( payload )
-			} )
-				.then( function ( res ) {
-					return res.json().then( function ( data ) {
-						return { ok: res.ok, data: data };
-					} );
+			} ).then( function ( res ) {
+				return res.json().then( function ( data ) {
+					return { ok: res.ok, data: data };
+				} );
+			} );
+		}
+
+		// JSON GET helper → resolves { ok, data }.
+		function apiGet( url ) {
+			return fetch( url, {
+				method: 'GET',
+				credentials: 'same-origin',
+				headers: { 'X-WP-Nonce': cfg.nonce }
+			} ).then( function ( res ) {
+				return res.json().then( function ( data ) {
+					return { ok: res.ok, data: data };
+				} );
+			} );
+		}
+
+		function onSend() {
+			if ( state.busy ) {
+				return;
+			}
+			var text = ( els.prompt.value || '' ).trim();
+			if ( ! text ) {
+				toast( t( 'emptyPrompt', 'Please enter a design prompt.' ), false );
+				switchTab( 'compose' );
+				els.prompt.focus();
+				return;
+			}
+
+			hideThreadEmpty();
+			addUserMessage( text );
+			els.prompt.value = '';
+			updateCharCount();
+
+			// A template exists → treat the message as an edit instruction (refine).
+			if ( state.template ) {
+				runRefine( text );
+				return;
+			}
+
+			// Planning phase → discuss with the consultant.
+			runChat();
+		}
+
+		// Conversational planning: send the running conversation, get a reply + an
+		// updated brief back. No template is generated here.
+		function runChat() {
+			setBusy( true );
+			ensureSession();
+			var typing = addTyping( t( 'thinking', 'Thinking through your request…' ) );
+			apiPost( cfg.chatUrl, { provider: selectedProvider(), messages: state.messages } )
+				.then( function ( r ) {
+					removeNode( typing );
+					if ( ! r.ok ) {
+						addAIError( ( r.data && r.data.message ) ? r.data.message : t( 'chatError', 'Could not reach the assistant.' ) );
+						return;
+					}
+					var d = r.data || {};
+					if ( d.brief ) {
+						setBrief( d.brief );
+					}
+					addAIMessage( d.reply || '…' );
+					if ( d.ready ) {
+						markPlanReady();
+					}
+					persistSession();
 				} )
+				.catch( function () {
+					removeNode( typing );
+					addAIError( t( 'chatError', 'Could not reach the assistant.' ) );
+				} )
+				.finally( function () {
+					setBusy( false );
+				} );
+		}
+
+		// Finalize the plan → build the template from the brief.
+		function onGenerateDesign() {
+			if ( state.busy ) {
+				return;
+			}
+			var brief = ( els.brief && els.brief.value || state.brief || '' ).trim();
+			if ( ! brief ) {
+				brief = lastUserText();
+			}
+			if ( ! brief ) {
+				toast( t( 'noPlan', 'Chat a little first so I can draft a plan.' ), false );
+				switchTab( 'compose' );
+				els.prompt.focus();
+				return;
+			}
+			state.brief = brief;
+			hideThreadEmpty();
+			runGenerate( wrapScope( brief ), t( 'generateDesign', 'Generate design' ) );
+		}
+
+		// Most recent user message text (fallback when no brief yet).
+		function lastUserText() {
+			for ( var i = state.messages.length - 1; i >= 0; i-- ) {
+				if ( 'user' === state.messages[ i ].role ) {
+					return state.messages[ i ].content;
+				}
+			}
+			return '';
+		}
+
+		function runGenerate( promptText, displayText ) {
+			setBusy( true );
+			setLoading( true );
+			var typing = addTyping( t( 'thinking', 'Thinking through your request…' ) );
+
+			var payload = { provider: selectedProvider(), prompt: promptText };
+			if ( state.scope ) {
+				payload.scope = state.scope;
+			}
+			if ( state.reference ) {
+				payload.reference = state.reference;
+			}
+			if ( state.image && state.image.data ) {
+				payload.image = state.image.data;
+				payload.image_mime = state.image.mime;
+			}
+
+			apiPost( cfg.restUrl, payload )
 				.then( function ( result ) {
+					removeNode( typing );
 					if ( ! result.ok ) {
 						var msg = ( result.data && result.data.message )
 							? result.data.message
 							: t( 'genericError', 'Generation failed. Please try again.' );
+						addAIError( msg );
 						toast( msg, false );
 						showState();
 						return;
 					}
 					renderTemplate( result.data.template );
+					addAIMessage( t( 'builtReply', 'Done — your layout is in the preview. Tell me what to change, or push it to Elementor.' ) );
 					toast( t( 'generated', 'Layout generated.' ), true );
 					if ( els.templateTitle && ! els.templateTitle.value ) {
 						els.templateTitle.value = 'AI Generated — ' + new Date().toLocaleDateString();
 					}
-					addHistoryEntry( {
-						prompt: rawPrompt,
-						provider: provider,
-						json: result.data.template,
-						timestamp: Math.floor( Date.now() / 1000 )
-					} );
+					persistSession();
 				} )
 				.catch( function () {
+					removeNode( typing );
+					addAIError( t( 'networkError', 'Network error. Could not reach the server.' ) );
 					toast( t( 'networkError', 'Network error. Could not reach the server.' ), false );
 					showState();
 				} )
 				.finally( function () {
 					setLoading( false );
+					setBusy( false );
 				} );
+		}
+
+		function runRefine( instruction ) {
+			setBusy( true );
+			setLoading( true );
+			var typing = addTyping( t( 'refining', 'Updating your layout…' ) );
+
+			apiPost( cfg.refineUrl, {
+				provider: selectedProvider(),
+				instruction: instruction,
+				template: state.template
+			} )
+				.then( function ( result ) {
+					removeNode( typing );
+					if ( ! result.ok ) {
+						var msg = ( result.data && result.data.message )
+							? result.data.message
+							: t( 'genericError', 'Generation failed. Please try again.' );
+						addAIError( msg );
+						toast( msg, false );
+						showState();
+						return;
+					}
+					renderTemplate( result.data.template );
+					addAIMessage( t( 'refinedReply', 'Updated the preview. Anything else to adjust?' ) );
+					toast( t( 'refined', 'Layout updated.' ), true );
+					persistSession();
+				} )
+				.catch( function () {
+					removeNode( typing );
+					addAIError( t( 'networkError', 'Network error. Could not reach the server.' ) );
+					toast( t( 'networkError', 'Network error. Could not reach the server.' ), false );
+					showState();
+				} )
+				.finally( function () {
+					setLoading( false );
+					setBusy( false );
+				} );
+		}
+
+		/* ---- Thread rendering ---- */
+
+		function hideThreadEmpty() {
+			if ( els.threadEmpty ) {
+				els.threadEmpty.style.display = 'none';
+			}
+		}
+
+		function scrollThread() {
+			if ( els.thread ) {
+				els.thread.scrollTop = els.thread.scrollHeight;
+			}
+		}
+
+		function addMessage( role, build ) {
+			if ( ! els.thread ) {
+				return null;
+			}
+			var wrap = document.createElement( 'div' );
+			wrap.className = 'aieb-msg ' + role;
+			var bubble = document.createElement( 'div' );
+			bubble.className = 'aieb-bubble';
+			build( bubble );
+			wrap.appendChild( bubble );
+			els.thread.appendChild( wrap );
+			scrollThread();
+			return wrap;
+		}
+
+		// Render a bubble WITHOUT tracking (used when rebuilding a restored session).
+		function renderMessage( role, text ) {
+			return addMessage( 'ai' === role ? 'ai' : 'user', function ( b ) {
+				b.textContent = text;
+			} );
+		}
+
+		function addUserMessage( text ) {
+			state.messages.push( { role: 'user', content: text } );
+			return renderMessage( 'user', text );
+		}
+
+		function addAIMessage( text ) {
+			state.messages.push( { role: 'assistant', content: text } );
+			return renderMessage( 'ai', text );
+		}
+
+		function addAIError( text ) {
+			return addMessage( 'ai err', function ( b ) {
+				b.textContent = text;
+			} );
+		}
+
+		function addTyping( label ) {
+			return addMessage( 'ai typing', function ( b ) {
+				var dots = document.createElement( 'span' );
+				dots.className = 'aieb-dots';
+				dots.innerHTML = '<i></i><i></i><i></i>';
+				b.appendChild( dots );
+				var s = document.createElement( 'span' );
+				s.className = 'aieb-typing-label';
+				s.textContent = ' ' + label;
+				b.appendChild( s );
+			} );
+		}
+
+		function removeNode( n ) {
+			if ( n && n.parentNode ) {
+				n.parentNode.removeChild( n );
+			}
+		}
+
+		// A "match a saved design style?" question built from the curated reference
+		// library — folded into the clarify card instead of a manual dropdown.
+		function referenceQuestion() {
+			if ( ! refList.length ) {
+				return null;
+			}
+			var options = [ { label: t( 'refNone', 'No preference' ), value: '' } ];
+			refList.forEach( function ( r ) {
+				options.push( { label: r.name || r.id, value: r.id } );
+			} );
+			return {
+				id: '__reference',
+				question: t( 'refQuestion', 'Match a saved design style?' ),
+				type: 'single',
+				options: options
+			};
+		}
+
+		// Render a clarify question card with single/multi option chips.
+		function renderQuestions( questions, enriched, original ) {
+			state.awaitingAnswers = true;
+			var answers = {};
+
+			// Append the reference "match style" question to the AI's content questions.
+			var allQuestions = questions.slice();
+			var refQ = referenceQuestion();
+			if ( refQ ) {
+				allQuestions.push( refQ );
+			}
+
+			addMessage( 'ai', function ( b ) {
+				var intro = document.createElement( 'div' );
+				intro.className = 'aieb-q-intro';
+				intro.textContent = t( 'clarifyIntro', 'A few quick questions to nail the design:' );
+				b.appendChild( intro );
+
+				allQuestions.forEach( function ( q ) {
+					answers[ q.id ] = { labels: [], values: [] };
+
+					var qb = document.createElement( 'div' );
+					qb.className = 'aieb-q';
+					var qt = document.createElement( 'div' );
+					qt.className = 'aieb-q-title';
+					qt.textContent = q.question;
+					qb.appendChild( qt );
+
+					var opts = document.createElement( 'div' );
+					opts.className = 'aieb-q-opts';
+					( q.options || [] ).forEach( function ( opt ) {
+						var chip = document.createElement( 'button' );
+						chip.type = 'button';
+						chip.className = 'aieb-chip aieb-q-opt';
+						chip.textContent = opt.label;
+						chip.setAttribute( 'data-value', null != opt.value ? opt.value : opt.label );
+						chip.addEventListener( 'click', function () {
+							if ( 'multi' === q.type ) {
+								chip.classList.toggle( 'active' );
+							} else {
+								Array.prototype.forEach.call( opts.querySelectorAll( '.aieb-q-opt' ), function ( x ) {
+									x.classList.remove( 'active' );
+								} );
+								chip.classList.add( 'active' );
+							}
+							var active = Array.prototype.slice.call( opts.querySelectorAll( '.aieb-q-opt.active' ) );
+							answers[ q.id ].labels = active.map( function ( x ) {
+								return x.textContent;
+							} );
+							answers[ q.id ].values = active.map( function ( x ) {
+								return x.getAttribute( 'data-value' );
+							} );
+						} );
+						opts.appendChild( chip );
+					} );
+					qb.appendChild( opts );
+					b.appendChild( qb );
+				} );
+
+				var actions = document.createElement( 'div' );
+				actions.className = 'aieb-q-actions';
+
+				var build = document.createElement( 'button' );
+				build.type = 'button';
+				build.className = 'btn primary sm';
+				build.textContent = t( 'buildNow', 'Build it' );
+				build.addEventListener( 'click', function () {
+					disableCard( actions );
+					submitAnswers( allQuestions, answers, enriched, original );
+				} );
+
+				var skip = document.createElement( 'button' );
+				skip.type = 'button';
+				skip.className = 'btn sm';
+				skip.textContent = t( 'skipQuestions', 'Skip & build anyway' );
+				skip.addEventListener( 'click', function () {
+					disableCard( actions );
+					state.awaitingAnswers = false;
+					runGenerate( wrapScope( enriched ), original );
+				} );
+
+				actions.appendChild( build );
+				actions.appendChild( skip );
+				b.appendChild( actions );
+			} );
+		}
+
+		// Disable every control inside a question card once it has been answered.
+		function disableCard( actions ) {
+			var card = actions.parentNode;
+			if ( ! card ) {
+				return;
+			}
+			Array.prototype.forEach.call( card.querySelectorAll( 'button' ), function ( btn ) {
+				btn.disabled = true;
+			} );
+			card.classList.add( 'aieb-q-done' );
+		}
+
+		function submitAnswers( questions, answers, enriched, original ) {
+			state.awaitingAnswers = false;
+
+			var lines = [];
+			var summary = [];
+			questions.forEach( function ( q ) {
+				var a = answers[ q.id ];
+				if ( ! a || ! a.labels || ! a.labels.length ) {
+					return;
+				}
+				// Reference question: drive the few-shot exemplar, not the text brief.
+				if ( '__reference' === q.id ) {
+					state.reference = ( a.values && a.values[ 0 ] ) ? a.values[ 0 ] : '';
+					if ( state.reference ) {
+						summary.push( a.labels[ 0 ] );
+					}
+					return;
+				}
+				lines.push( '- ' + q.question + ' ' + a.labels.join( ', ' ) );
+				summary.push( a.labels.join( ', ' ) );
+			} );
+
+			if ( summary.length ) {
+				addUserMessage( summary.join( ' · ' ) );
+			}
+
+			var finalPrompt = enriched;
+			if ( lines.length ) {
+				finalPrompt = enriched + '\n\nDetails:\n' + lines.join( '\n' );
+			}
+			runGenerate( wrapScope( finalPrompt ), original );
+		}
+
+		// Store the AI's inferred scope (used by wrapScope when building).
+		function setScope( scope ) {
+			var allowed = { fullpage: 1, custom: 1, hero: 1, pricing: 1, about: 1, features: 1, testimonials: 1, contact: 1 };
+			state.scope = allowed[ scope ] ? scope : '';
+		}
+
+		// Start a fresh conversation. The new session is created lazily on the
+		// first message, so this just clears local state.
+		function clearThreadState() {
+			state.template = null;
+			state.awaitingAnswers = false;
+			state.showingJson = false;
+			state.scope = '';
+			state.reference = '';
+			state.brief = '';
+			state.messages = [];
+			if ( els.thread ) {
+				Array.prototype.forEach.call( els.thread.querySelectorAll( '.aieb-msg' ), function ( n ) {
+					removeNode( n );
+				} );
+				if ( els.threadEmpty ) {
+					els.threadEmpty.style.display = '';
+				}
+			}
+			if ( els.brief ) {
+				els.brief.value = '';
+			}
+			if ( els.plan ) {
+				els.plan.classList.add( 'aieb-hidden' );
+			}
+			if ( els.prompt ) {
+				els.prompt.value = '';
+				updateCharCount();
+			}
+			if ( els.jsonPane ) {
+				els.jsonPane.classList.add( 'aieb-hidden' );
+			}
+			showState( 'empty' );
+			refreshPushState();
+		}
+
+		function resetChat() {
+			if ( state.busy ) {
+				return;
+			}
+			state.sessionId = null;
+			clearThreadState();
+		}
+
+		/* ---- Design plan (brief) ---- */
+
+		function setBrief( text ) {
+			state.brief = text;
+			if ( els.brief ) {
+				els.brief.value = text;
+			}
+			if ( els.plan && '' !== text ) {
+				els.plan.classList.remove( 'aieb-hidden' );
+			}
+			if ( els.generateDesign ) {
+				els.generateDesign.disabled = false;
+			}
+		}
+
+		function markPlanReady() {
+			if ( els.generateDesign ) {
+				els.generateDesign.classList.add( 'aieb-pulse' );
+			}
+			if ( els.plan ) {
+				els.plan.classList.remove( 'aieb-hidden' );
+			}
+		}
+
+		/* ---- Sessions (server-persisted conversations) ---- */
+
+		// Create a session on the server the first time it's needed.
+		function ensureSession() {
+			if ( state.sessionId ) {
+				return Promise.resolve( state.sessionId );
+			}
+			if ( state.creating ) {
+				return state.creating;
+			}
+			if ( ! cfg.sessionsUrl ) {
+				return Promise.resolve( null );
+			}
+			state.creating = apiPost( cfg.sessionsUrl, {} )
+				.then( function ( r ) {
+					state.creating = null;
+					if ( r.ok && r.data && r.data.id ) {
+						state.sessionId = r.data.id;
+						loadSessions();
+					}
+					return state.sessionId;
+				} )
+				.catch( function () {
+					state.creating = null;
+					return null;
+				} );
+			return state.creating;
+		}
+
+		// Debounced save of the current session.
+		function persistSession() {
+			if ( ! cfg.sessionsUrl ) {
+				return;
+			}
+			clearTimeout( saveTimer );
+			saveTimer = setTimeout( doPersist, 800 );
+		}
+
+		function doPersist() {
+			ensureSession().then( function ( id ) {
+				if ( ! id ) {
+					return;
+				}
+				apiPost( cfg.sessionsUrl + '/' + id, {
+					messages: state.messages,
+					brief: state.brief,
+					template: state.template,
+					provider: selectedProvider(),
+					scope: state.scope,
+					reference: state.reference,
+					title: sessionTitle()
+				} ).then( function () {
+					loadSessions();
+				} );
+			} );
+		}
+
+		// Title from the first user message (truncated), else a default.
+		function sessionTitle() {
+			var first = '';
+			for ( var i = 0; i < state.messages.length; i++ ) {
+				if ( 'user' === state.messages[ i ].role ) {
+					first = state.messages[ i ].content;
+					break;
+				}
+			}
+			first = ( first || '' ).replace( /\s+/g, ' ' ).trim();
+			if ( ! first ) {
+				return '';
+			}
+			return first.length > 60 ? first.slice( 0, 57 ) + '…' : first;
+		}
+
+		function loadSessions() {
+			if ( ! cfg.sessionsUrl ) {
+				return;
+			}
+			apiGet( cfg.sessionsUrl )
+				.then( function ( r ) {
+					sessions = ( r.ok && Array.isArray( r.data ) ) ? r.data : [];
+					renderSessions();
+				} )
+				.catch( function () {} );
+		}
+
+		function renderSessions() {
+			if ( ! els.historyList ) {
+				return;
+			}
+			if ( els.histCount ) {
+				els.histCount.textContent = sessions.length;
+			}
+			els.historyList.innerHTML = '';
+
+			var filter = els.histSearch ? ( els.histSearch.value || '' ).toLowerCase() : '';
+			var shown = sessions.filter( function ( s ) {
+				return ! filter || ( s.title || '' ).toLowerCase().indexOf( filter ) > -1;
+			} );
+
+			if ( ! shown.length ) {
+				els.historyList.appendChild( emptyListItem( t( 'sessionsEmpty', 'No chats yet. Start one below.' ) ) );
+				return;
+			}
+
+			shown.forEach( function ( s ) {
+				var row = document.createElement( 'div' );
+				row.className = 'aieb-litem aieb-session' + ( s.id === state.sessionId ? ' active' : '' );
+
+				var main = document.createElement( 'button' );
+				main.type = 'button';
+				main.className = 'aieb-session-open';
+				main.title = t( 'restore', 'Open' );
+
+				var lt = document.createElement( 'div' );
+				lt.className = 'lt';
+				lt.textContent = s.title || t( 'newChat', 'New chat' );
+				var lm = document.createElement( 'div' );
+				lm.className = 'lm';
+				var meta = document.createElement( 'span' );
+				meta.textContent = ( s.message_count || 0 ) + ' ' + t( 'messages', 'messages' );
+				lm.appendChild( meta );
+				var tm = document.createElement( 'span' );
+				tm.style.marginLeft = 'auto';
+				tm.textContent = formatTime( s.updated );
+				lm.appendChild( tm );
+				main.appendChild( lt );
+				main.appendChild( lm );
+				main.addEventListener( 'click', function () {
+					openSession( s.id );
+				} );
+
+				var del = document.createElement( 'button' );
+				del.type = 'button';
+				del.className = 'aieb-litem-del';
+				del.title = t( 'deleteChat', 'Delete' );
+				del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>';
+				del.addEventListener( 'click', function ( e ) {
+					e.stopPropagation();
+					deleteSession( s.id );
+				} );
+
+				row.appendChild( main );
+				row.appendChild( del );
+				els.historyList.appendChild( row );
+			} );
+		}
+
+		function openSession( id ) {
+			if ( state.busy || ! cfg.sessionsUrl ) {
+				return;
+			}
+			apiGet( cfg.sessionsUrl + '/' + id )
+				.then( function ( r ) {
+					if ( ! r.ok || ! r.data ) {
+						return;
+					}
+					var d = r.data;
+					clearThreadState();
+					state.sessionId = d.id;
+					state.messages = Array.isArray( d.messages ) ? d.messages : [];
+					state.scope = d.scope || '';
+					state.reference = d.reference || '';
+					if ( d.provider ) {
+						selectProviderByKey( d.provider );
+					}
+
+					// Rebuild the thread.
+					if ( state.messages.length ) {
+						hideThreadEmpty();
+						state.messages.forEach( function ( m ) {
+							renderMessage( 'assistant' === m.role ? 'ai' : 'user', m.content );
+						} );
+					}
+					if ( d.brief ) {
+						setBrief( d.brief );
+					}
+					if ( d.template ) {
+						renderTemplate( d.template );
+					} else {
+						showState( 'empty' );
+					}
+					refreshPushState();
+					renderSessions();
+					switchTab( 'compose' );
+				} )
+				.catch( function () {} );
+		}
+
+		function deleteSession( id ) {
+			if ( ! cfg.sessionsUrl ) {
+				return;
+			}
+			if ( window.confirm && ! window.confirm( t( 'confirmDeleteChat', 'Delete this chat? This cannot be undone.' ) ) ) {
+				return;
+			}
+			fetch( cfg.sessionsUrl + '/' + id, {
+				method: 'DELETE',
+				credentials: 'same-origin',
+				headers: { 'X-WP-Nonce': cfg.nonce }
+			} )
+				.then( function () {
+					if ( id === state.sessionId ) {
+						resetChat();
+					}
+					loadSessions();
+				} )
+				.catch( function () {} );
 		}
 
 		function renderTemplate( template ) {
@@ -536,11 +1248,17 @@
 			var hasTemplate = !! state.template;
 			var hasPage = !! ( els.pageSelect && els.pageSelect.value );
 			els.push.disabled = ! ( hasTemplate && hasPage );
+			if ( els.pushGutenberg ) {
+				els.pushGutenberg.disabled = ! ( hasTemplate && hasPage );
+			}
 			if ( els.download ) {
 				els.download.disabled = ! hasTemplate;
 			}
 			if ( els.pushTemplate ) {
 				els.pushTemplate.disabled = ! hasTemplate;
+			}
+			if ( els.savePattern ) {
+				els.savePattern.disabled = ! hasTemplate;
 			}
 		}
 
@@ -591,6 +1309,80 @@
 				} )
 				.catch( function ( err ) {
 					var msg = ( err && err.message ) ? err.message : t( 'pushFailed', 'Could not push to Elementor.' );
+					toast( msg, false );
+				} )
+				.finally( function () {
+					refreshPushState();
+				} );
+		}
+
+		// Push the same template into a page as Gutenberg blocks (post_content).
+		function onPushGutenberg() {
+			if ( ! state.template ) {
+				toast( t( 'noTemplate', 'Generate a template before pushing.' ), false );
+				return;
+			}
+			if ( ! cfg.pushGutenbergUrl ) {
+				toast( t( 'pushGutenbergFailed', 'Could not push to Gutenberg.' ), false );
+				return;
+			}
+			var pageId = parseInt( els.pageSelect.value, 10 );
+			if ( ! pageId ) {
+				toast( t( 'noPage', 'Select a target page.' ), false );
+				return;
+			}
+
+			els.pushGutenberg.disabled = true;
+
+			wp.apiFetch( {
+				url: cfg.pushGutenbergUrl,
+				method: 'POST',
+				data: { page_id: pageId, elementor_json: state.template }
+			} )
+				.then( function ( res ) {
+					toast( t( 'pushedGutenberg', 'Pushed to Gutenberg.' ), true );
+					if ( res && res.edit_url ) {
+						window.open( res.edit_url, '_blank', 'noopener' );
+					}
+				} )
+				.catch( function ( err ) {
+					var msg = ( err && err.message ) ? err.message : t( 'pushGutenbergFailed', 'Could not push to Gutenberg.' );
+					toast( msg, false );
+				} )
+				.finally( function () {
+					refreshPushState();
+				} );
+		}
+
+		// Save the design as a reusable Gutenberg pattern (wp_block post).
+		function onSavePattern() {
+			if ( ! state.template ) {
+				toast( t( 'noTemplate', 'Generate a template before pushing.' ), false );
+				return;
+			}
+			if ( ! cfg.savePatternUrl ) {
+				toast( t( 'patternFailed', 'Could not save the pattern.' ), false );
+				return;
+			}
+
+			var title = ( els.templateTitle && els.templateTitle.value || '' ).trim();
+
+			els.savePattern.disabled = true;
+			toast( t( 'savingPattern', 'Saving pattern…' ), true );
+
+			wp.apiFetch( {
+				url: cfg.savePatternUrl,
+				method: 'POST',
+				data: { elementor_json: state.template, title: title }
+			} )
+				.then( function ( res ) {
+					toast( t( 'patternSaved', 'Saved as a Gutenberg pattern.' ), true );
+					if ( res && res.edit_url ) {
+						window.open( res.edit_url, '_blank', 'noopener' );
+					}
+				} )
+				.catch( function ( err ) {
+					var msg = ( err && err.message ) ? err.message : t( 'patternFailed', 'Could not save the pattern.' );
 					toast( msg, false );
 				} )
 				.finally( function () {
@@ -761,46 +1553,7 @@
 			} );
 		}
 
-		/* ---- Generation history ---- */
-
-		function addHistoryEntry( entry ) {
-			history.unshift( entry );
-			history = history.slice( 0, 10 );
-			renderHistory();
-		}
-
-		function renderHistory() {
-			if ( ! els.historyList ) {
-				return;
-			}
-			if ( els.histCount ) {
-				els.histCount.textContent = history.length;
-			}
-			els.historyList.innerHTML = '';
-
-			var filter = els.histSearch ? ( els.histSearch.value || '' ).toLowerCase() : '';
-			var shown = history.filter( function ( h ) {
-				return ! filter || ( h.prompt || '' ).toLowerCase().indexOf( filter ) > -1;
-			} );
-
-			if ( ! shown.length ) {
-				els.historyList.appendChild( emptyListItem( t( 'historyEmpty', 'No generations yet.' ) ) );
-				return;
-			}
-
-			shown.forEach( function ( entry ) {
-				var btn = listItem(
-					entry.prompt || '(no prompt)',
-					entry.provider || '',
-					formatTime( entry.timestamp ),
-					t( 'restore', 'Restore' )
-				);
-				btn.addEventListener( 'click', function () {
-					restoreEntry( entry );
-				} );
-				els.historyList.appendChild( btn );
-			} );
-		}
+		/* ---- List item helpers ---- */
 
 		// Build a design ".litem" list row: title line + meta line (tag + time).
 		function listItem( title, tag, time, hint ) {
@@ -838,24 +1591,6 @@
 			li.className = 'aieb-history-empty';
 			li.textContent = text;
 			return li;
-		}
-
-		function restoreEntry( entry ) {
-			if ( ! entry ) {
-				return;
-			}
-			if ( entry.prompt ) {
-				els.prompt.value = entry.prompt;
-				updateCharCount();
-			}
-			if ( entry.provider ) {
-				selectProviderByKey( entry.provider );
-			}
-			if ( entry.json ) {
-				renderTemplate( entry.json );
-			}
-			switchTab( 'compose' );
-			toast( t( 'restored', 'Prompt loaded into composer.' ), true );
 		}
 
 		function formatTime( ts ) {
@@ -1099,6 +1834,27 @@
 			decl( out, 'border-radius', dimension( s.border_radius ) );
 		}
 
+		// Elementor box-shadow group: "<prefix>_box_shadow_type":"yes" +
+		// "<prefix>_box_shadow":{horizontal,vertical,blur,spread,color}. Default
+		// prefix is "box_shadow". Gives cards/sections real elevation in preview.
+		function boxShadowDecls( s, out, prefix ) {
+			prefix = prefix || 'box_shadow';
+			var bs = s[ prefix + '_box_shadow' ];
+			if ( 'yes' !== s[ prefix + '_box_shadow_type' ] && ! bs ) {
+				return;
+			}
+			if ( ! bs || 'object' !== typeof bs ) {
+				return;
+			}
+			var h = ( null != bs.horizontal ? bs.horizontal : 0 ) + 'px';
+			var v = ( null != bs.vertical ? bs.vertical : 0 ) + 'px';
+			var blur = ( null != bs.blur ? bs.blur : 0 ) + 'px';
+			var spread = ( null != bs.spread ? bs.spread : 0 ) + 'px';
+			var color = bs.color || 'rgba(0,0,0,0.15)';
+			var inset = ( 'inset' === s[ prefix + '_box_shadow_position' ] ) ? 'inset ' : '';
+			out.push( 'box-shadow:' + inset + h + ' ' + v + ' ' + blur + ' ' + spread + ' ' + color );
+		}
+
 		function spacingDecls( s, out ) {
 			decl( out, 'padding', dimension( s.padding ) );
 			decl( out, 'margin', dimension( s.margin ) );
@@ -1110,6 +1866,7 @@
 			backgroundDecls( s, out );
 			spacingDecls( s, out );
 			borderDecls( s, out );
+			boxShadowDecls( s, out );
 			decl( out, 'min-height', sizeValue( s.min_height ) );
 			decl( out, 'flex-direction', s.flex_direction );
 			decl( out, 'justify-content', s.flex_justify_content || s.justify_content );
@@ -1117,6 +1874,21 @@
 			var gap = s.flex_gap || s.gap;
 			if ( gap && 'object' === typeof gap ) {
 				decl( out, 'gap', sizeValue( gap ) );
+			}
+			// Rows wrap so multi-card layouts don't overflow narrow previews.
+			if ( 'row' === s.flex_direction && 'nowrap' !== s.flex_wrap ) {
+				out.push( 'flex-wrap:wrap' );
+			}
+			// Boxed content / explicit max-width: cap and center (Elementor "boxed").
+			var maxW = sizeValue( s.max_width );
+			if ( ! maxW && 'boxed' === s.content_width ) {
+				maxW = '1140px';
+			}
+			if ( maxW ) {
+				out.push( 'max-width:' + maxW );
+				out.push( 'width:100%' );
+				out.push( 'margin-left:auto' );
+				out.push( 'margin-right:auto' );
 			}
 			decl( out, 'text-align', s.align );
 			return out.join( ';' );
@@ -1131,6 +1903,7 @@
 			typographyDecls( s, out );
 			backgroundDecls( s, out );
 			borderDecls( s, out );
+			boxShadowDecls( s, out );
 			spacingDecls( s, out );
 			decl( out, 'text-align', s.align );
 			return out.join( ';' );
@@ -1247,11 +2020,43 @@
 						: '';
 					return '<blockquote class="aieb-quote"' + styleAttr( bq.join( ';' ) ) + '>' + esc( quote ) + cite + '</blockquote>';
 
+				case 'icon-box':
+					var ibTitle = s.title_text || s.title || s.text || '';
+					var ibDesc = s.description_text || s.description || s.editor || s.content || '';
+					var ibWrap = [];
+					decl( ibWrap, 'text-align', s.align || 'center' );
+					spacingDecls( s, ibWrap );
+					var ibTitleStyle = [];
+					decl( ibTitleStyle, 'color', s.title_color );
+					var ibDescStyle = [];
+					decl( ibDescStyle, 'color', s.description_color || s.text_color );
+					return '<div' + idAttr + styleAttr( ibWrap.join( ';' ) ) + '>' +
+						iconCircle( s.primary_color || s.icon_color ) +
+						( ibTitle ? '<div class="aieb-ib-title"' + styleAttr( ibTitleStyle.join( ';' ) ) + '>' + esc( ibTitle ) + '</div>' : '' ) +
+						( ibDesc ? '<div class="aieb-ib-desc"' + styleAttr( ibDescStyle.join( ';' ) ) + '>' + esc( ibDesc ) + '</div>' : '' ) +
+						'</div>';
+
+				case 'icon':
+				case 'icons':
+					var icWrap = [];
+					decl( icWrap, 'text-align', s.align || 'center' );
+					return '<div' + idAttr + styleAttr( icWrap.join( ';' ) ) + '>' +
+						iconCircle( s.primary_color || s.color || s.icon_color ) + '</div>';
+
 				default:
 					var label = s.title || s.text || s.editor || s.content || el.widgetType || '';
 					collectResponsive( id, s, function ( v ) { return textStyle( v, 'text_color' ); } );
 					return '<div' + idAttr + styleAttr( textStyle( s, 'text_color' ) ) + '>' + esc( label ) + '</div>';
 			}
+		}
+
+		// A circular icon placeholder. The Elementor icon library can't be mapped
+		// 1:1 in preview, so we render a tinted circle with a generic glyph — enough
+		// for feature/value cards to read as designed rather than empty.
+		function iconCircle( color ) {
+			return '<span class="aieb-ico-c" style="background:' + ( color || '#4f46e5' ) + ';">' +
+				'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>' +
+				'</span>';
 		}
 
 		// Button styling lives on the <a>: background, color, padding, radius, type.
@@ -1261,6 +2066,7 @@
 			decl( out, 'color', s.button_text_color || s.text_color || s.color );
 			decl( out, 'padding', dimension( s.text_padding || s.padding ) );
 			borderDecls( s, out );
+			boxShadowDecls( s, out );
 			typographyDecls( s, out );
 			return out.join( ';' );
 		}
@@ -1287,9 +2093,19 @@
 				'*{box-sizing:border-box;}' +
 				'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;margin:0;padding:0;color:#1d2327;line-height:1.5;}' +
 				// Elementor containers are flex columns by default; inline styles override.
-				'.aieb-c{display:flex;flex-direction:column;}' +
+				'.aieb-c{display:flex;flex-direction:column;min-width:0;}' +
+				// Row children share width but keep a sensible min basis so they wrap
+				// and stack on narrow/mobile widths instead of squishing into slivers.
+				'.aieb-c[style*="flex-direction:row"]>.aieb-c{flex:1 1 260px;}' +
+				// Below mobile width, force any row to stack even without _mobile keys.
+				'@media (max-width:600px){.aieb-c[style*="flex-direction:row"]{flex-direction:column!important;}}' +
 				'h1,h2,h3,h4,h5,h6,p{margin:0 0 12px;}' +
 				'img{max-width:100%;height:auto;}' +
+				// Icon placeholder circle + icon-box text (inline color overrides apply).
+				'.aieb-ico-c{display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;margin-bottom:14px;}' +
+				'.aieb-ico-c svg{width:26px;height:26px;}' +
+				'.aieb-ib-title{font-size:19px;font-weight:700;margin-bottom:8px;}' +
+				'.aieb-ib-desc{font-size:15px;opacity:.85;}' +
 				// Base button look; inline color/background from settings overrides these.
 				'.aieb-btn{display:inline-block;background:#2271b1;color:#fff;padding:12px 24px;border-radius:4px;text-decoration:none;}' +
 				// Base quote look; inline border/background from settings overrides these.

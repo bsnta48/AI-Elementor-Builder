@@ -1,0 +1,395 @@
+{
+  "version": "0.4",
+  "type": "page",
+  "page_settings": {},
+  "content": [
+    {
+      "id": "fnd00001",
+      "elType": "container",
+      "settings": {
+        "background_background": "classic",
+        "background_color": "#ffffff",
+        "content_width": "boxed",
+        "padding": { "unit": "px", "top": "80", "right": "24", "bottom": "80", "left": "24" },
+        "padding_tablet": { "unit": "px", "top": "56", "right": "24", "bottom": "56", "left": "24" },
+        "padding_mobile": { "unit": "px", "top": "40", "right": "16", "bottom": "40", "left": "16" },
+        "flex_direction": "row",
+        "flex_direction_tablet": "column",
+        "align_items": "stretch",
+        "justify_content": "center",
+        "gap": { "unit": "px", "size": 56 },
+        "gap_mobile": { "unit": "px", "size": 32 }
+      },
+      "elements": [
+        {
+          "id": "fnd00002",
+          "elType": "container",
+          "settings": {
+            "width": { "unit": "%", "size": 42 },
+            "width_tablet": { "unit": "%", "size": 100 },
+            "flex_direction": "column",
+            "gap": { "unit": "px", "size": 24 }
+          },
+          "elements": [
+            {
+              "id": "fnd00003",
+              "elType": "container",
+              "settings": {
+                "background_background": "classic",
+                "background_image": { "url": "https://placehold.co/400x300/1f2a44/1f2a44.png", "id": "" },
+                "background_position": "center center",
+                "background_size": "cover",
+                "background_overlay_background": "gradient",
+                "background_overlay_color": "#0f172a",
+                "background_overlay_color_b": "rgba(15,23,42,0)",
+                "background_overlay_gradient_angle": { "unit": "deg", "size": 0 },
+                "background_overlay_gradient_type": "linear",
+                "min_height": { "unit": "px", "size": 300 },
+                "border_radius": { "unit": "px", "top": "16", "right": "16", "bottom": "16", "left": "16" },
+                "padding": { "unit": "px", "top": "20", "right": "20", "bottom": "20", "left": "20" },
+                "flex_direction": "column",
+                "justify_content": "space-between",
+                "align_items": "flex-start"
+              },
+              "elements": [
+                {
+                  "id": "fnd00004",
+                  "elType": "container",
+                  "settings": {
+                    "background_background": "classic",
+                    "background_color": "rgba(13,148,136,0.35)",
+                    "border_radius": { "unit": "px", "top": "20", "right": "20", "bottom": "20", "left": "20" },
+                    "padding": { "unit": "px", "top": "5", "right": "12", "bottom": "5", "left": "12" },
+                    "width": { "unit": "px", "size": 0 },
+                    "flex_grow": "0",
+                    "flex_direction": "row",
+                    "align_self": "flex-start"
+                  },
+                  "elements": [
+                    {
+                      "id": "fnd00005",
+                      "elType": "widget",
+                      "widgetType": "heading",
+                      "settings": {
+                        "title": "CO-FOUNDER",
+                        "header_size": "div",
+                        "title_color": "#5eead4",
+                        "typography_typography": "custom",
+                        "typography_font_size": { "unit": "px", "size": 11 },
+                        "typography_font_weight": "700",
+                        "typography_letter_spacing": { "unit": "px", "size": 1.5 }
+                      },
+                      "elements": []
+                    }
+                  ]
+                },
+                {
+                  "id": "fnd00006",
+                  "elType": "container",
+                  "settings": {
+                    "flex_direction": "row",
+                    "justify_content": "space-between",
+                    "align_items": "flex-end",
+                    "width": { "unit": "%", "size": 100 },
+                    "gap": { "unit": "px", "size": 12 }
+                  },
+                  "elements": [
+                    {
+                      "id": "fnd00007",
+                      "elType": "container",
+                      "settings": {
+                        "flex_direction": "column",
+                        "gap": { "unit": "px", "size": 2 },
+                        "width": "auto"
+                      },
+                      "elements": [
+                        {
+                          "id": "fnd00008",
+                          "elType": "widget",
+                          "widgetType": "heading",
+                          "settings": {
+                            "title": "Raushan Jaiswal",
+                            "header_size": "h3",
+                            "title_color": "#ffffff",
+                            "typography_typography": "custom",
+                            "typography_font_size": { "unit": "px", "size": 22 },
+                            "typography_font_weight": "700"
+                          },
+                          "elements": []
+                        },
+                        {
+                          "id": "fnd00009",
+                          "elType": "widget",
+                          "widgetType": "heading",
+                          "settings": {
+                            "title": "Product & vision",
+                            "header_size": "div",
+                            "title_color": "#cbd5e1",
+                            "typography_typography": "custom",
+                            "typography_font_size": { "unit": "px", "size": 14 },
+                            "typography_font_weight": "400"
+                          },
+                          "elements": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "fnd0000a",
+                      "elType": "widget",
+                      "widgetType": "social-icons",
+                      "settings": {
+                        "shape": "circle",
+                        "icon_size": { "unit": "px", "size": 14 },
+                        "icon_padding": { "unit": "em", "size": 0.75 },
+                        "icon_color": "custom",
+                        "icon_primary_color": "rgba(255,255,255,0.12)",
+                        "icon_secondary_color": "#ffffff",
+                        "social_icon_list": [
+                          {
+                            "_id": "soc00001",
+                            "social_icon": { "value": "fab fa-x-twitter", "library": "fa-brands" }
+                          },
+                          {
+                            "_id": "soc00002",
+                            "social_icon": { "value": "fab fa-linkedin-in", "library": "fa-brands" }
+                          }
+                        ]
+                      },
+                      "elements": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "fnd0000b",
+              "elType": "container",
+              "settings": {
+                "background_background": "classic",
+                "background_image": { "url": "https://placehold.co/400x300/2a1530/2a1530.png", "id": "" },
+                "background_position": "center center",
+                "background_size": "cover",
+                "background_overlay_background": "gradient",
+                "background_overlay_color": "#0f172a",
+                "background_overlay_color_b": "rgba(15,23,42,0)",
+                "background_overlay_gradient_angle": { "unit": "deg", "size": 0 },
+                "background_overlay_gradient_type": "linear",
+                "min_height": { "unit": "px", "size": 300 },
+                "border_radius": { "unit": "px", "top": "16", "right": "16", "bottom": "16", "left": "16" },
+                "padding": { "unit": "px", "top": "20", "right": "20", "bottom": "20", "left": "20" },
+                "flex_direction": "column",
+                "justify_content": "space-between",
+                "align_items": "flex-start"
+              },
+              "elements": [
+                {
+                  "id": "fnd0000c",
+                  "elType": "container",
+                  "settings": {
+                    "background_background": "classic",
+                    "background_color": "rgba(13,148,136,0.35)",
+                    "border_radius": { "unit": "px", "top": "20", "right": "20", "bottom": "20", "left": "20" },
+                    "padding": { "unit": "px", "top": "5", "right": "12", "bottom": "5", "left": "12" },
+                    "flex_direction": "row",
+                    "align_self": "flex-start"
+                  },
+                  "elements": [
+                    {
+                      "id": "fnd0000d",
+                      "elType": "widget",
+                      "widgetType": "heading",
+                      "settings": {
+                        "title": "CO-FOUNDER",
+                        "header_size": "div",
+                        "title_color": "#5eead4",
+                        "typography_typography": "custom",
+                        "typography_font_size": { "unit": "px", "size": 11 },
+                        "typography_font_weight": "700",
+                        "typography_letter_spacing": { "unit": "px", "size": 1.5 }
+                      },
+                      "elements": []
+                    }
+                  ]
+                },
+                {
+                  "id": "fnd0000e",
+                  "elType": "container",
+                  "settings": {
+                    "flex_direction": "row",
+                    "justify_content": "space-between",
+                    "align_items": "flex-end",
+                    "width": { "unit": "%", "size": 100 },
+                    "gap": { "unit": "px", "size": 12 }
+                  },
+                  "elements": [
+                    {
+                      "id": "fnd0000f",
+                      "elType": "container",
+                      "settings": {
+                        "flex_direction": "column",
+                        "gap": { "unit": "px", "size": 2 },
+                        "width": "auto"
+                      },
+                      "elements": [
+                        {
+                          "id": "fnd00010",
+                          "elType": "widget",
+                          "widgetType": "heading",
+                          "settings": {
+                            "title": "Nabin Jaiswal",
+                            "header_size": "h3",
+                            "title_color": "#ffffff",
+                            "typography_typography": "custom",
+                            "typography_font_size": { "unit": "px", "size": 22 },
+                            "typography_font_weight": "700"
+                          },
+                          "elements": []
+                        },
+                        {
+                          "id": "fnd00011",
+                          "elType": "widget",
+                          "widgetType": "heading",
+                          "settings": {
+                            "title": "Engineering & build",
+                            "header_size": "div",
+                            "title_color": "#cbd5e1",
+                            "typography_typography": "custom",
+                            "typography_font_size": { "unit": "px", "size": 14 },
+                            "typography_font_weight": "400"
+                          },
+                          "elements": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "fnd00012",
+                      "elType": "widget",
+                      "widgetType": "social-icons",
+                      "settings": {
+                        "shape": "circle",
+                        "icon_size": { "unit": "px", "size": 14 },
+                        "icon_padding": { "unit": "em", "size": 0.75 },
+                        "icon_color": "custom",
+                        "icon_primary_color": "rgba(255,255,255,0.12)",
+                        "icon_secondary_color": "#ffffff",
+                        "social_icon_list": [
+                          {
+                            "_id": "soc00003",
+                            "social_icon": { "value": "fab fa-x-twitter", "library": "fa-brands" }
+                          },
+                          {
+                            "_id": "soc00004",
+                            "social_icon": { "value": "fab fa-linkedin-in", "library": "fa-brands" }
+                          }
+                        ]
+                      },
+                      "elements": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "fnd00013",
+          "elType": "container",
+          "settings": {
+            "width": { "unit": "%", "size": 58 },
+            "width_tablet": { "unit": "%", "size": 100 },
+            "flex_direction": "column",
+            "justify_content": "center",
+            "gap": { "unit": "px", "size": 22 },
+            "border_border": "solid",
+            "border_width": { "unit": "px", "top": "0", "right": "0", "bottom": "0", "left": "3" },
+            "border_color": "#14b8a6",
+            "padding": { "unit": "px", "top": "8", "right": "0", "bottom": "8", "left": "32" },
+            "padding_mobile": { "unit": "px", "top": "8", "right": "0", "bottom": "8", "left": "20" }
+          },
+          "elements": [
+            {
+              "id": "fnd00014",
+              "elType": "widget",
+              "widgetType": "icon",
+              "settings": {
+                "selected_icon": { "value": "fas fa-quote-right", "library": "fa-solid" },
+                "primary_color": "#14b8a6",
+                "size": { "unit": "px", "size": 28 },
+                "align": "left"
+              },
+              "elements": []
+            },
+            {
+              "id": "fnd00015",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "When we launched WP Travel Engine, we weren’t thinking about milestones, reviews, or active installs. We were focused on solving a problem we had seen firsthand.",
+                "header_size": "h2",
+                "title_color": "#0f172a",
+                "typography_typography": "custom",
+                "typography_font_size": { "unit": "px", "size": 26 },
+                "typography_font_size_tablet": { "unit": "px", "size": 23 },
+                "typography_font_size_mobile": { "unit": "px", "size": 20 },
+                "typography_font_weight": "700",
+                "typography_line_height": { "unit": "em", "size": 1.35 }
+              },
+              "elements": []
+            },
+            {
+              "id": "fnd00016",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p>Over the years, thousands of tour operators have trusted us to be part of their business. That trust is something we never take for granted.</p><p>Every booking made through a WP Travel Engine website represents a real business serving real travelers. Remembering that responsibility helps guide every decision we make.</p><p>Thank you for allowing us to be part of your journey. We look forward to continuing to build, improve, and grow alongside you.</p>",
+                "text_color": "#475569",
+                "typography_typography": "custom",
+                "typography_font_size": { "unit": "px", "size": 16 },
+                "typography_line_height": { "unit": "em", "size": 1.7 }
+              },
+              "elements": []
+            },
+            {
+              "id": "fnd00017",
+              "elType": "container",
+              "settings": {
+                "flex_direction": "row",
+                "align_items": "center",
+                "gap": { "unit": "px", "size": 14 },
+                "padding": { "unit": "px", "top": "8", "right": "0", "bottom": "0", "left": "0" }
+              },
+              "elements": [
+                {
+                  "id": "fnd00018",
+                  "elType": "container",
+                  "settings": {
+                    "background_background": "classic",
+                    "background_color": "#14b8a6",
+                    "width": { "unit": "px", "size": 32 },
+                    "height": { "unit": "px", "size": 2 },
+                    "flex_grow": "0"
+                  },
+                  "elements": []
+                },
+                {
+                  "id": "fnd00019",
+                  "elType": "widget",
+                  "widgetType": "text-editor",
+                  "settings": {
+                    "editor": "<p>— <span style=\"color:#14b8a6;font-weight:700;\">RAUSHAN JAISWAL</span> &amp; <span style=\"color:#14b8a6;font-weight:700;\">NABIN JAISWAL</span>, CO-FOUNDERS</p>",
+                    "text_color": "#475569",
+                    "typography_typography": "custom",
+                    "typography_font_size": { "unit": "px", "size": 13 },
+                    "typography_font_weight": "600",
+                    "typography_letter_spacing": { "unit": "px", "size": 0.5 }
+                  },
+                  "elements": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

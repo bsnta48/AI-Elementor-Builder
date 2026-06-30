@@ -2,6 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Task handoff (READ FIRST)
+
+Before starting work, read **`PROJECT_STATUS.md`** at the repo root — it holds the live task
+state (done / in-progress / next) shared across every AI CLI (Claude Code, Codex, Cursor,
+Gemini, Aider). **Update `PROJECT_STATUS.md` before you stop** so another CLI can continue
+where you left off if this session ends or runs out of credits.
+
 ## What this is
 
 WordPress plugin: AI-assisted Elementor page generation. User writes a natural-language prompt (optionally with a reference design or screenshot), an AI provider returns Elementor template JSON, and the plugin validates it and pushes it into a page or the Elementor Library. Hard dependency on the Elementor plugin — self-deactivates with an admin notice if Elementor is absent (`Plugin::init()`).

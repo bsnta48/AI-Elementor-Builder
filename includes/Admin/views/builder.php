@@ -62,57 +62,6 @@ $aieb_model_label = static function ( $key, $opts, $providers_def ) {
 	return (string) reset( $models );
 };
 
-$aieb_sections = array(
-	'fullpage'     => __( 'Full page (all sections)', 'ai-elementor-builder' ),
-	'custom'       => __( 'Single section', 'ai-elementor-builder' ),
-	'hero'         => __( 'Hero', 'ai-elementor-builder' ),
-	'pricing'      => __( 'Pricing', 'ai-elementor-builder' ),
-	'about'        => __( 'About', 'ai-elementor-builder' ),
-	'features'     => __( 'Features', 'ai-elementor-builder' ),
-	'testimonials' => __( 'Testimonials', 'ai-elementor-builder' ),
-	'contact'      => __( 'Contact', 'ai-elementor-builder' ),
-);
-
-// Prompt templates: clicking a chip pre-fills the textarea and selects the
-// matching section type. key => [ label, section, prompt ].
-$aieb_templates = array(
-	'custom'       => array(
-		'label'   => __( 'Custom', 'ai-elementor-builder' ),
-		'section' => 'custom',
-		'prompt'  => '',
-	),
-	'hero'         => array(
-		'label'   => __( 'Hero', 'ai-elementor-builder' ),
-		'section' => 'hero',
-		'prompt'  => __( 'A bold hero section: large headline, supporting subline, primary + secondary CTA, and a trust badge row underneath.', 'ai-elementor-builder' ),
-	),
-	'pricing'      => array(
-		'label'   => __( 'Pricing', 'ai-elementor-builder' ),
-		'section' => 'pricing',
-		'prompt'  => __( 'A pricing section with 3 tiers (Starter, Pro, Team). Highlight the Pro plan, monthly/annual toggle, and a feature checklist per tier.', 'ai-elementor-builder' ),
-	),
-	'about'        => array(
-		'label'   => __( 'About', 'ai-elementor-builder' ),
-		'section' => 'about',
-		'prompt'  => __( 'An about section: short brand story, founding year, a 2x2 values grid, and a team photo placeholder.', 'ai-elementor-builder' ),
-	),
-	'features'     => array(
-		'label'   => __( 'Features', 'ai-elementor-builder' ),
-		'section' => 'features',
-		'prompt'  => __( 'A features section: 6 feature cards in a 3-column grid, each with a monoline icon, title, and one-line description.', 'ai-elementor-builder' ),
-	),
-	'testimonials' => array(
-		'label'   => __( 'Testimonials', 'ai-elementor-builder' ),
-		'section' => 'testimonials',
-		'prompt'  => __( 'A testimonials wall: 4 customer quotes with name, role, and a 5-star rating.', 'ai-elementor-builder' ),
-	),
-	'contact'      => array(
-		'label'   => __( 'Contact', 'ai-elementor-builder' ),
-		'section' => 'contact',
-		'prompt'  => __( 'A contact section: heading, short paragraph, a name/email/message form, and an info column with email, phone, and hours.', 'ai-elementor-builder' ),
-	),
-);
-
 $aieb_builder_url  = menu_page_url( 'ai-elementor-builder', false );
 $aieb_settings_url = menu_page_url( 'ai-elementor-builder-settings', false );
 ?>
@@ -135,93 +84,80 @@ $aieb_settings_url = menu_page_url( 'ai-elementor-builder-settings', false );
 		<aside class="aieb-rail">
 			<div class="aieb-segtabs" role="tablist">
 				<button class="active" type="button" data-tab="compose" role="tab" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><?php esc_html_e( 'Compose', 'ai-elementor-builder' ); ?></button>
-				<button type="button" data-tab="history" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v5h5M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l3 2"/></svg><?php esc_html_e( 'History', 'ai-elementor-builder' ); ?> <span class="aieb-count" id="aieb-hist-count">0</span></button>
+				<button type="button" data-tab="history" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v5h5M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l3 2"/></svg><?php esc_html_e( 'Chats', 'ai-elementor-builder' ); ?> <span class="aieb-count" id="aieb-hist-count">0</span></button>
 				<button type="button" data-tab="templates" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg><?php esc_html_e( 'Saved', 'ai-elementor-builder' ); ?></button>
 			</div>
 
 			<div class="aieb-railbody scroll">
-				<!-- COMPOSE -->
+				<!-- COMPOSE (chat) -->
 				<div class="aieb-tabpane active" data-pane="compose">
-					<div class="aieb-group">
-						<div class="aieb-lbl"><?php esc_html_e( 'Start from a template', 'ai-elementor-builder' ); ?></div>
-						<div class="aieb-chips" role="group" aria-label="<?php esc_attr_e( 'Prompt templates', 'ai-elementor-builder' ); ?>">
-							<?php foreach ( $aieb_templates as $aieb_tkey => $aieb_tpl ) : ?>
-								<button
-									type="button"
-									class="aieb-chip aieb-template-btn<?php echo 'custom' === $aieb_tkey ? ' active' : ''; ?>"
-									data-tpl="<?php echo esc_attr( $aieb_tkey ); ?>"
-									data-section="<?php echo esc_attr( $aieb_tpl['section'] ); ?>"
-									data-prompt="<?php echo esc_attr( $aieb_tpl['prompt'] ); ?>"
-								><?php echo esc_html( $aieb_tpl['label'] ); ?></button>
-							<?php endforeach; ?>
-						</div>
+					<div class="aieb-chathead">
+						<button type="button" class="btn xs" id="aieb-new-chat" title="<?php esc_attr_e( 'Start a new chat', 'ai-elementor-builder' ); ?>">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+							<?php esc_html_e( 'New chat', 'ai-elementor-builder' ); ?>
+						</button>
+						<span class="aieb-spacer"></span>
+						<button type="button" class="btn xs" id="aieb-opts-toggle" aria-expanded="false" title="<?php esc_attr_e( 'Provider & reference image', 'ai-elementor-builder' ); ?>">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8M4.6 9a1.6 1.6 0 0 0-.3-1.8"/></svg>
+							<?php esc_html_e( 'Options', 'ai-elementor-builder' ); ?>
+							<span class="aieb-modelchip" id="aieb-model-name"><?php echo esc_html( $aieb_model_label( $aieb_default_provider, $aieb_opts, $aieb_providers_def ) ); ?></span>
+						</button>
 					</div>
 
-					<div class="aieb-group">
-						<label class="aieb-lbl" for="aieb-prompt"><?php esc_html_e( 'Design prompt', 'ai-elementor-builder' ); ?></label>
-						<div class="aieb-composer">
-							<textarea class="input" id="aieb-prompt" placeholder="<?php esc_attr_e( 'Describe the section you want to build — layout, tone, content, calls to action…', 'ai-elementor-builder' ); ?>"></textarea>
-							<div class="aieb-composer-meta"><span></span><span class="aieb-cc"><span id="aieb-cc">0</span> <?php esc_html_e( 'chars', 'ai-elementor-builder' ); ?></span></div>
-						</div>
-						<div class="hint"><?php esc_html_e( 'Tip: name the audience, the goal, and 2–3 must-have elements for sharper output.', 'ai-elementor-builder' ); ?></div>
-					</div>
-
-					<div class="aieb-group">
-						<div class="aieb-lbl"><?php esc_html_e( 'Reference image', 'ai-elementor-builder' ); ?> <span class="pill aieb-pill-xs"><?php esc_html_e( 'optional', 'ai-elementor-builder' ); ?></span></div>
-						<label class="aieb-drop" for="aieb-image">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>
-							<div><div class="t" id="aieb-ref-name"><?php esc_html_e( 'Drop a screenshot or mockup', 'ai-elementor-builder' ); ?></div><div class="s"><?php esc_html_e( 'Sent to vision-capable providers · PNG, JPG', 'ai-elementor-builder' ); ?></div></div>
-							<input type="file" id="aieb-image" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
-						</label>
-						<div id="aieb-image-preview" class="aieb-image-preview aieb-hidden">
-							<img id="aieb-image-thumb" src="" alt="<?php esc_attr_e( 'Selected reference image preview', 'ai-elementor-builder' ); ?>" />
-							<button type="button" id="aieb-image-remove" class="aieb-image-remove"><?php esc_html_e( 'Remove image', 'ai-elementor-builder' ); ?></button>
-						</div>
-					</div>
-
-					<div class="aieb-group aieb-grid2">
-						<div class="field">
-							<label for="aieb-section-type"><?php esc_html_e( 'Scope', 'ai-elementor-builder' ); ?></label>
-							<select class="input" id="aieb-section-type">
-								<?php foreach ( $aieb_sections as $aieb_value => $aieb_label ) : ?>
-									<option value="<?php echo esc_attr( $aieb_value ); ?>"><?php echo esc_html( $aieb_label ); ?></option>
+					<!-- Collapsible options: provider + reference image (scope & style are asked in-chat) -->
+					<div class="aieb-options aieb-hidden" id="aieb-options">
+						<div class="aieb-group">
+							<div class="aieb-lbl"><?php esc_html_e( 'Provider', 'ai-elementor-builder' ); ?></div>
+							<div class="aieb-providers" id="aieb-prov-grid" role="radiogroup" aria-label="<?php esc_attr_e( 'AI provider', 'ai-elementor-builder' ); ?>">
+								<?php
+								foreach ( $aieb_provider_meta as $aieb_pkey => $aieb_pmeta ) :
+									$aieb_is_active = ( $aieb_pkey === $aieb_default_provider );
+									$aieb_pmodel    = $aieb_model_label( $aieb_pkey, $aieb_opts, $aieb_providers_def );
+									?>
+									<button
+										type="button"
+										class="aieb-prov<?php echo $aieb_is_active ? ' active' : ''; ?>"
+										data-prov="<?php echo esc_attr( $aieb_pkey ); ?>"
+										data-model="<?php echo esc_attr( $aieb_pmodel ); ?>"
+										role="radio"
+										aria-checked="<?php echo $aieb_is_active ? 'true' : 'false'; ?>"
+									>
+										<?php if ( ! empty( $aieb_pmeta['local'] ) ) : ?>
+											<span class="aieb-prov-badge"><?php esc_html_e( 'LOCAL', 'ai-elementor-builder' ); ?></span>
+										<?php endif; ?>
+										<span class="ico"><?php echo esc_html( $aieb_pmeta['ico'] ); ?></span>
+										<span><span class="nm"><?php echo esc_html( $aieb_pmeta['label'] ); ?></span><span class="st"><span class="dot on"></span><?php echo ! empty( $aieb_pmeta['local'] ) ? esc_html__( 'Offline-ready', 'ai-elementor-builder' ) : esc_html__( 'Ready', 'ai-elementor-builder' ); ?></span></span>
+									</button>
 								<?php endforeach; ?>
-							</select>
+							</div>
 						</div>
-						<div class="field">
-							<label for="aieb-reference"><?php esc_html_e( 'Match style', 'ai-elementor-builder' ); ?></label>
-							<select class="input" id="aieb-reference">
-								<option value=""><?php esc_html_e( 'No reference', 'ai-elementor-builder' ); ?></option>
-							</select>
-							<p id="aieb-reference-desc" class="hint aieb-reference-desc"></p>
+
+					</div>
+
+					<!-- Conversation thread -->
+					<div class="aieb-thread" id="aieb-thread">
+						<div class="aieb-thread-empty" id="aieb-thread-empty">
+							<span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></span>
+							<p><?php esc_html_e( 'Tell me what you want to build. We’ll talk it through, shape a plan together, then generate the design when you’re ready.', 'ai-elementor-builder' ); ?></p>
+							<div class="aieb-chips">
+								<button class="aieb-chip" type="button" data-seed="<?php esc_attr_e( 'I want a website for my business', 'ai-elementor-builder' ); ?>"><?php esc_html_e( 'Business website', 'ai-elementor-builder' ); ?></button>
+								<button class="aieb-chip" type="button" data-seed="<?php esc_attr_e( 'A landing page to capture leads', 'ai-elementor-builder' ); ?>"><?php esc_html_e( 'Landing page', 'ai-elementor-builder' ); ?></button>
+								<button class="aieb-chip" type="button" data-seed="<?php esc_attr_e( 'A pricing section with three tiers', 'ai-elementor-builder' ); ?>"><?php esc_html_e( 'Pricing section', 'ai-elementor-builder' ); ?></button>
+							</div>
 						</div>
 					</div>
 
-					<div class="aieb-group">
-						<div class="aieb-lbl"><?php esc_html_e( 'Provider', 'ai-elementor-builder' ); ?></div>
-						<div class="aieb-providers" id="aieb-prov-grid" role="radiogroup" aria-label="<?php esc_attr_e( 'AI provider', 'ai-elementor-builder' ); ?>">
-							<?php
-							foreach ( $aieb_provider_meta as $aieb_pkey => $aieb_pmeta ) :
-								$aieb_is_active = ( $aieb_pkey === $aieb_default_provider );
-								$aieb_pmodel    = $aieb_model_label( $aieb_pkey, $aieb_opts, $aieb_providers_def );
-								?>
-								<button
-									type="button"
-									class="aieb-prov<?php echo $aieb_is_active ? ' active' : ''; ?>"
-									data-prov="<?php echo esc_attr( $aieb_pkey ); ?>"
-									data-model="<?php echo esc_attr( $aieb_pmodel ); ?>"
-									role="radio"
-									aria-checked="<?php echo $aieb_is_active ? 'true' : 'false'; ?>"
-								>
-									<?php if ( ! empty( $aieb_pmeta['local'] ) ) : ?>
-										<span class="aieb-prov-badge"><?php esc_html_e( 'LOCAL', 'ai-elementor-builder' ); ?></span>
-									<?php endif; ?>
-									<span class="ico"><?php echo esc_html( $aieb_pmeta['ico'] ); ?></span>
-									<span><span class="nm"><?php echo esc_html( $aieb_pmeta['label'] ); ?></span><span class="st"><span class="dot on"></span><?php echo ! empty( $aieb_pmeta['local'] ) ? esc_html__( 'Offline-ready', 'ai-elementor-builder' ) : esc_html__( 'Ready', 'ai-elementor-builder' ); ?></span></span>
-								</button>
-							<?php endforeach; ?>
+					<!-- Design plan (brief the AI builds; finalize → generate) -->
+					<div class="aieb-plan aieb-hidden" id="aieb-plan">
+						<div class="aieb-plan-head">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+							<span><?php esc_html_e( 'Design plan', 'ai-elementor-builder' ); ?></span>
 						</div>
-						<div class="aieb-modelbar"><span class="l"><?php esc_html_e( 'Model', 'ai-elementor-builder' ); ?></span><span class="m" id="aieb-model-name"><?php echo esc_html( $aieb_model_label( $aieb_default_provider, $aieb_opts, $aieb_providers_def ) ); ?></span></div>
+						<textarea class="input" id="aieb-brief" rows="6" placeholder="<?php esc_attr_e( 'The plan will appear here as we chat. You can edit it before generating.', 'ai-elementor-builder' ); ?>"></textarea>
+						<button class="btn primary block" type="button" id="aieb-generate-design" disabled>
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
+							<?php esc_html_e( 'Generate design', 'ai-elementor-builder' ); ?>
+						</button>
 					</div>
 				</div>
 
@@ -229,7 +165,7 @@ $aieb_settings_url = menu_page_url( 'ai-elementor-builder-settings', false );
 				<div class="aieb-tabpane" data-pane="history">
 					<div class="aieb-searchwrap">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-						<input class="input" id="aieb-hist-search" placeholder="<?php esc_attr_e( 'Search prompts…', 'ai-elementor-builder' ); ?>" />
+						<input class="input" id="aieb-hist-search" placeholder="<?php esc_attr_e( 'Search chats…', 'ai-elementor-builder' ); ?>" />
 					</div>
 					<ul id="aieb-history-list" class="aieb-history-list"></ul>
 				</div>
@@ -241,10 +177,35 @@ $aieb_settings_url = menu_page_url( 'ai-elementor-builder-settings', false );
 			</div>
 
 			<div class="aieb-railfoot">
-				<button class="btn primary block" type="button" id="aieb-generate">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
-					<?php esc_html_e( 'Generate', 'ai-elementor-builder' ); ?>
-				</button>
+				<!-- Attached reference image preview chip -->
+				<div id="aieb-image-preview" class="aieb-image-chip aieb-hidden">
+					<img id="aieb-image-thumb" src="" alt="<?php esc_attr_e( 'Selected reference image preview', 'ai-elementor-builder' ); ?>" />
+					<span class="aieb-image-chip-name" id="aieb-ref-name"><?php esc_html_e( 'Reference image', 'ai-elementor-builder' ); ?></span>
+					<button type="button" id="aieb-image-remove" class="aieb-image-remove" aria-label="<?php esc_attr_e( 'Remove image', 'ai-elementor-builder' ); ?>">&times;</button>
+				</div>
+
+				<div class="aieb-composer2">
+					<!-- Attach menu -->
+					<div class="aieb-attach-wrap">
+						<button class="btn aieb-attach" type="button" id="aieb-attach" aria-haspopup="menu" aria-expanded="false" title="<?php esc_attr_e( 'Attach', 'ai-elementor-builder' ); ?>">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+						</button>
+						<div class="aieb-attach-menu aieb-hidden" id="aieb-attach-menu" role="menu">
+							<button class="aieb-attach-item" type="button" id="aieb-attach-image" role="menuitem">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+								<?php esc_html_e( 'Upload reference image', 'ai-elementor-builder' ); ?>
+							</button>
+						</div>
+					</div>
+
+					<label class="screen-reader-text" for="aieb-prompt"><?php esc_html_e( 'Message', 'ai-elementor-builder' ); ?></label>
+					<textarea class="input" id="aieb-prompt" rows="2" placeholder="<?php esc_attr_e( 'Describe a page, or ask for a change…', 'ai-elementor-builder' ); ?>"></textarea>
+					<button class="btn primary aieb-send" type="button" id="aieb-generate" title="<?php esc_attr_e( 'Send (Enter)', 'ai-elementor-builder' ); ?>">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>
+					</button>
+				</div>
+				<input type="file" id="aieb-image" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
+				<div class="aieb-composer-meta"><span class="hint"><?php esc_html_e( 'Enter to send · Shift+Enter for newline', 'ai-elementor-builder' ); ?></span><span class="aieb-cc"><span id="aieb-cc">0</span> <?php esc_html_e( 'chars', 'ai-elementor-builder' ); ?></span></div>
 			</div>
 		</aside>
 
@@ -315,7 +276,9 @@ $aieb_settings_url = menu_page_url( 'ai-elementor-builder-settings', false );
 				<span class="aieb-grow"></span>
 				<button class="btn" type="button" id="aieb-download" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><?php esc_html_e( 'Download JSON', 'ai-elementor-builder' ); ?></button>
 				<button class="btn" type="button" id="aieb-push-template" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg><?php esc_html_e( 'Save as Template', 'ai-elementor-builder' ); ?></button>
-				<button class="btn primary" type="button" id="aieb-push" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg><?php esc_html_e( 'Push to Elementor', 'ai-elementor-builder' ); ?></button>
+				<button class="btn" type="button" id="aieb-save-pattern" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg><?php esc_html_e( 'Save as Pattern', 'ai-elementor-builder' ); ?></button>
+					<button class="btn" type="button" id="aieb-push-gutenberg" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3h18v18H3zM3 9h18M9 21V9"/></svg><?php esc_html_e( 'Push to Gutenberg', 'ai-elementor-builder' ); ?></button>
+					<button class="btn primary" type="button" id="aieb-push" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg><?php esc_html_e( 'Push to Elementor', 'ai-elementor-builder' ); ?></button>
 			</div>
 		</main>
 	</div>

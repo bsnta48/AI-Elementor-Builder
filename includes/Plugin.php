@@ -86,9 +86,18 @@ final class Plugin {
 		$factory    = new Providers\Provider_Factory( $this->settings );
 		$validator  = new Validator\Elementor_Validator();
 		$references = new References\Reference_Registry();
+		$session_store = new Sessions\Session_Store();
+		$session_store->register();
+
 		( new Rest\Generate_Controller( $factory, $validator, $this->settings, $references ) )->register();
+		( new Rest\Clarify_Controller( $factory, $this->settings ) )->register();
+		( new Rest\Chat_Controller( $factory, $this->settings ) )->register();
+		( new Rest\Refine_Controller( $factory, $validator, $this->settings ) )->register();
+		( new Rest\Sessions_Controller( $session_store ) )->register();
 		( new Rest\Push_Controller( $validator ) )->register();
 		( new Rest\Push_Template_Controller( $validator ) )->register();
+		( new Rest\Push_Gutenberg_Controller( $validator ) )->register();
+		( new Rest\Save_Pattern_Controller( $validator ) )->register();
 		( new Rest\Test_Key_Controller( $factory, $this->settings ) )->register();
 
 		$this->menu = new Admin\Menu();

@@ -8,6 +8,7 @@
 namespace AI_Elementor_Builder\Rest;
 
 use AI_Elementor_Builder\History\History;
+use AI_Elementor_Builder\Prompts\Design_Spec;
 use AI_Elementor_Builder\Providers\Provider_Factory;
 use AI_Elementor_Builder\References\Reference_Registry;
 use AI_Elementor_Builder\Settings\Settings;
@@ -108,6 +109,13 @@ class Generate_Controller {
 						'required'          => false,
 						'sanitize_callback' => 'sanitize_key',
 					),
+					// Optional inferred scope; steers auto-selected exemplars when no
+					// explicit reference is chosen.
+					'scope'     => array(
+						'type'              => 'string',
+						'required'          => false,
+						'sanitize_callback' => 'sanitize_key',
+					),
 					// Optional reference image: raw base64 (no data: prefix) for
 					// vision-capable providers.
 					'image'      => array(
@@ -162,14 +170,25 @@ class Generate_Controller {
 		$provider_key = (string) $request->get_param( 'provider' );
 		$prompt       = (string) $request->get_param( 'prompt' );
 
-		// Inject a curated design reference as a few-shot exemplar when chosen.
+		// Inject curated design exemplars as few-shot examples. An explicit user
+		// pick wins; otherwise auto-select the best exemplar(s) for the request so
+		// every generation gets a strong design anchor.
 		$reference_id = (string) $request->get_param( 'reference' );
+		$scope        = (string) $request->get_param( 'scope' );
+		$exemplars    = array();
 		if ( '' !== $reference_id ) {
 			$reference = $this->references->get( $reference_id );
 			if ( $reference ) {
-				$prompt .= "\n\nREFERENCE DESIGN — match the structure, layout sophistication, spacing rhythm, typography scale and color discipline of the example below. Adapt all content (text, labels, counts of items, colors if the request implies a different palette) to the user request above; do NOT copy its wording verbatim. Reuse its setting keys and nesting style. Reference Elementor JSON:\n"
-					. (string) wp_json_encode( $reference['content'] );
+				$exemplars[] = $reference['content'];
 			}
+		} else {
+			foreach ( $this->references->auto_select( $scope, $prompt ) as $ref ) {
+				$exemplars[] = $ref['content'];
+			}
+		}
+		if ( ! empty( $exemplars ) ) {
+			$prompt .= "\n\nREFERENCE DESIGNS — match the structure, layout sophistication, spacing rhythm, typography scale and color discipline of the example(s) below. Adapt all content (text, labels, counts of items, colors if the request implies a different palette) to the user request above; do NOT copy their wording verbatim. Reuse their setting keys and nesting style. Reference Elementor JSON:\n"
+				. (string) wp_json_encode( $exemplars );
 		}
 
 		// Mock mode (WP_DEBUG only): return a canned template without touching a
@@ -385,7 +404,7 @@ class Generate_Controller {
 	 * @return string
 	 */
 	private function system_prompt(): string {
-		return <<<'PROMPT'
+		$contract = <<<'PROMPT'
 You are an Elementor page-template generator. Output ONLY a single valid JSON object — no markdown, no code fences, no prose, no explanation before or after.
 
 The JSON MUST be a complete Elementor template document with this exact top-level shape:
@@ -428,5 +447,7 @@ RESPONSIVE — the layout MUST adapt to tablet and mobile. Elementor stores per-
 
 Return the JSON object and nothing else.
 PROMPT;
+
+		return $contract . "\n\n" . Design_Spec::rules();
 	}
 }
