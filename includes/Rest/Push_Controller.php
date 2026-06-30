@@ -9,6 +9,7 @@
 
 namespace AI_Elementor_Builder\Rest;
 
+use AI_Elementor_Builder\Services\Elementor_Page_Writer;
 use AI_Elementor_Builder\Validator\Elementor_Validator;
 use WP_Error;
 use WP_REST_Request;
@@ -32,10 +33,16 @@ class Push_Controller {
 	private $validator;
 
 	/**
+	 * @var Elementor_Page_Writer
+	 */
+	private $writer;
+
+	/**
 	 * @param Elementor_Validator $validator Elementor JSON validator.
 	 */
 	public function __construct( Elementor_Validator $validator ) {
 		$this->validator = $validator;
+		$this->writer    = new Elementor_Page_Writer();
 	}
 
 	/**
@@ -123,20 +130,8 @@ class Push_Controller {
 			);
 		}
 
-		// Elementor stores the elements tree (not the document envelope) as a
-		// JSON-encoded string. wp_slash() guards the slashes update_post_meta strips.
-		$content = $validated['data']['content'];
-		update_post_meta( $page_id, '_elementor_data', wp_slash( (string) wp_json_encode( $content ) ) );
-		update_post_meta( $page_id, '_elementor_edit_mode', 'builder' );
-		update_post_meta( $page_id, '_elementor_template_type', 'wp-page' );
-		if ( '' === (string) get_post_meta( $page_id, '_elementor_version', true ) ) {
-			update_post_meta( $page_id, '_elementor_version', defined( 'ELEMENTOR_VERSION' ) ? ELEMENTOR_VERSION : '3.0.0' );
-		}
-
-		// Flush Elementor's cached CSS for this page so the new layout renders.
-		delete_post_meta( $page_id, '_elementor_css' );
-		delete_option( '_elementor_css_' . $page_id );
-		delete_post_meta( $page_id, '_elementor_inline_css' );
+		// Persist the elements tree, enable builder mode, flush cached CSS.
+		$this->writer->write( $page_id, $validated['data']['content'] );
 
 		return new WP_REST_Response(
 			array(

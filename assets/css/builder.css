@@ -560,3 +560,50 @@ body.folded .aieb-savebar { left: 36px; }
 .aieb-image-chip-name { flex: 1; min-width: 0; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .aieb-image-chip .aieb-image-remove { flex: 0 0 auto; width: 24px; height: 24px; border: 0; background: none; color: var(--faint); font-size: 18px; line-height: 1; cursor: pointer; border-radius: var(--r-sm); }
 .aieb-image-chip .aieb-image-remove:hover { color: var(--danger); }
+
+/* ============================================================
+   Full-website (multi-page) builder
+   ============================================================ */
+
+/* Mode switch (Single page / Full website) */
+.aieb-modesw { display: flex; gap: 4px; padding: 4px; margin-bottom: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-md); }
+.aieb-modesw button { flex: 1; padding: 7px 10px; border: 0; background: none; border-radius: var(--r-sm); cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.aieb-modesw button.active { background: var(--surface); color: var(--fg); box-shadow: var(--sh-1); }
+
+/* Mode visibility: site panel vs chat */
+#aieb-site { display: none; }
+.aieb-app.aieb-site-mode #aieb-site { display: block; }
+.aieb-app.aieb-site-mode .aieb-thread,
+.aieb-app.aieb-site-mode #aieb-plan,
+.aieb-app.aieb-site-mode .aieb-composer2,
+.aieb-app.aieb-site-mode .aieb-composer-meta,
+.aieb-app.aieb-site-mode #aieb-image-preview { display: none; }
+
+.aieb-site .aieb-hidden { display: none; }
+.aieb-site-hint { font-size: 12.5px; color: var(--muted); margin: 0 0 8px; }
+.aieb-site-intro { margin-bottom: 12px; }
+.aieb-app .aieb-site .btn.block { width: 100%; justify-content: center; margin-top: 8px; }
+
+.aieb-pages-lbl { margin-top: 12px; }
+.aieb-pagelist { display: flex; flex-direction: column; gap: 10px; margin: 8px 0; }
+.aieb-pagecard { border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); padding: 10px; }
+.aieb-pagecard-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.aieb-pagecard-top .aieb-page-title { flex: 1; min-width: 0; }
+.aieb-home-radio { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); white-space: nowrap; cursor: pointer; }
+.aieb-page-del { flex: 0 0 auto; width: 26px; height: 26px; border: 0; background: none; color: var(--faint); font-size: 18px; line-height: 1; cursor: pointer; border-radius: var(--r-sm); }
+.aieb-page-del:hover { color: var(--danger); background: var(--bg); }
+.aieb-page-brief { font-size: 12.5px; resize: vertical; }
+
+.aieb-check { display: flex; align-items: center; gap: 7px; margin-top: 10px; font-size: 12.5px; color: var(--muted); cursor: pointer; }
+
+.aieb-site-results { margin-top: 12px; }
+.aieb-site-results.aieb-hidden { display: none; }
+.aieb-site-progress { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 8px; font-size: 12.5px; color: var(--fg); background: var(--accent-weak); border-radius: var(--r-sm); }
+.aieb-spin { width: 14px; height: 14px; flex: 0 0 auto; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: aieb-spin 0.7s linear infinite; }
+@keyframes aieb-spin { to { transform: rotate(360deg); } }
+.aieb-site-pages { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.aieb-site-pages li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface); }
+.aieb-site-pg-title { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.aieb-site-pg-link { font-size: 11.5px; color: var(--accent); text-decoration: none; white-space: nowrap; }
+.aieb-site-pg-link:hover { text-decoration: underline; }
+.aieb-site-err { margin-top: 8px; padding: 8px 10px; font-size: 12.5px; color: var(--danger); background: var(--danger-weak, rgba(220,38,38,0.08)); border-radius: var(--r-sm); }

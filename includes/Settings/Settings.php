@@ -37,6 +37,8 @@ class Settings {
 		'gemini_api_key',
 		'openrouter_api_key',
 		'nvidia_api_key',
+		'unsplash_api_key',
+		'pexels_api_key',
 	);
 
 	/**
@@ -143,6 +145,38 @@ class Settings {
 				array( $this, 'render_key_field' ),
 				self::PAGE,
 				'aieb_keys',
+				array(
+					'label_for' => $field,
+					'field'     => $field,
+				)
+			);
+		}
+
+		add_settings_section(
+			'aieb_images',
+			__( 'Stock Images', 'ai-elementor-builder' ),
+			function () {
+				echo '<p>' . esc_html__( 'Optional. When set, generated image keywords are resolved to real photos and downloaded into your Media Library. Without a key, tasteful placeholders are used so pages never show broken images.', 'ai-elementor-builder' ) . '</p>';
+				printf(
+					'<p class="description">%1$s <a href="https://unsplash.com/developers" target="_blank" rel="noopener">Unsplash</a> · <a href="https://www.pexels.com/api/" target="_blank" rel="noopener">Pexels</a></p>',
+					esc_html__( 'Get a free API key:', 'ai-elementor-builder' )
+				);
+			},
+			self::PAGE
+		);
+
+		$image_key_labels = array(
+			'unsplash_api_key' => __( 'Unsplash Access Key', 'ai-elementor-builder' ),
+			'pexels_api_key'   => __( 'Pexels API Key', 'ai-elementor-builder' ),
+		);
+
+		foreach ( $image_key_labels as $field => $label ) {
+			add_settings_field(
+				$field,
+				$label,
+				array( $this, 'render_key_field' ),
+				self::PAGE,
+				'aieb_images',
 				array(
 					'label_for' => $field,
 					'field'     => $field,

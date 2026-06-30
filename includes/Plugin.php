@@ -90,6 +90,8 @@ final class Plugin {
 		$session_store->register();
 
 		( new Rest\Generate_Controller( $factory, $validator, $this->settings, $references ) )->register();
+		( new Rest\Site_Plan_Controller( $factory, $this->settings ) )->register();
+		( new Rest\Build_Site_Controller( $factory, $validator, $this->settings, $references ) )->register();
 		( new Rest\Clarify_Controller( $factory, $this->settings ) )->register();
 		( new Rest\Chat_Controller( $factory, $this->settings ) )->register();
 		( new Rest\Refine_Controller( $factory, $validator, $this->settings ) )->register();

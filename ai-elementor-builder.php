@@ -20,7 +20,7 @@ namespace AI_Elementor_Builder;
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'AIEB_VERSION', '1.9.2' );
+define( 'AIEB_VERSION', '1.10.0' );
 define( 'AIEB_PLUGIN_FILE', __FILE__ );
 define( 'AIEB_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AIEB_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

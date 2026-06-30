@@ -132,6 +132,7 @@
 		loadSessions();
 		renderTemplateHistory();
 		updateCharCount();
+		initSiteBuilder();
 
 		function bindEvents() {
 			els.generate.addEventListener( 'click', onSend );
@@ -1618,6 +1619,273 @@
 			toastTimer = setTimeout( function () {
 				els.toast.classList.remove( 'show' );
 			}, 2600 );
+		}
+
+		/* ===================== FULL WEBSITE (multi-page) ===================== */
+
+		// Self-contained: plan a sitemap, edit it, then build every page + a nav
+		// menu via /plan-site and /build-site. Reuses apiPost/toast/t/selectedProvider
+		// from this scope; manages its own injected DOM under #aieb-site.
+		function initSiteBuilder() {
+			var s = {
+				modesw: root.querySelector( '#aieb-modesw' ),
+				panel: root.querySelector( '#aieb-site' ),
+				intro: root.querySelector( '#aieb-site-intro' ),
+				prompt: root.querySelector( '#aieb-site-prompt' ),
+				planBtn: root.querySelector( '#aieb-plan-site' ),
+				planWrap: root.querySelector( '#aieb-site-plan' ),
+				title: root.querySelector( '#aieb-site-title' ),
+				list: root.querySelector( '#aieb-page-list' ),
+				addBtn: root.querySelector( '#aieb-add-page' ),
+				setHome: root.querySelector( '#aieb-set-home' ),
+				buildBtn: root.querySelector( '#aieb-build-site' ),
+				results: root.querySelector( '#aieb-site-results' )
+			};
+
+			// Bail quietly if the markup or config isn't present.
+			if ( ! s.panel || ! s.modesw || ! cfg.planSiteUrl || ! cfg.buildSiteUrl ) {
+				return;
+			}
+
+			var busy = false;
+
+			function esc( str ) {
+				return String( str == null ? '' : str ).replace( /[&<>"']/g, function ( c ) {
+					return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ c ];
+				} );
+			}
+
+			function slugify( str ) {
+				return String( str || '' ).toLowerCase().trim()
+					.replace( /[^a-z0-9]+/g, '-' ).replace( /^-+|-+$/g, '' );
+			}
+
+			// Toggle between single-page (chat) and full-site mode.
+			Array.prototype.forEach.call( s.modesw.querySelectorAll( 'button' ), function ( btn ) {
+				btn.addEventListener( 'click', function () {
+					var mode = btn.getAttribute( 'data-mode' );
+					Array.prototype.forEach.call( s.modesw.querySelectorAll( 'button' ), function ( b ) {
+						var on = b === btn;
+						b.classList.toggle( 'active', on );
+						b.setAttribute( 'aria-selected', on ? 'true' : 'false' );
+					} );
+					root.classList.toggle( 'aieb-site-mode', 'site' === mode );
+				} );
+			} );
+
+			s.planBtn.addEventListener( 'click', planSite );
+			s.addBtn.addEventListener( 'click', function () {
+				s.list.appendChild( pageCard( { title: '', brief: '', scope: 'custom', role: 'standard' } ) );
+			} );
+			s.buildBtn.addEventListener( 'click', buildSite );
+
+			function planSite() {
+				if ( busy ) {
+					return;
+				}
+				var prompt = ( s.prompt.value || '' ).trim();
+				if ( ! prompt ) {
+					toast( t( 'sitePromptEmpty', 'Describe the website you want to build.' ), false );
+					s.prompt.focus();
+					return;
+				}
+				setBusy( true );
+				s.planBtn.textContent = t( 'planningSite', 'Planning your site…' );
+				apiPost( cfg.planSiteUrl, { provider: selectedProvider(), prompt: prompt } )
+					.then( function ( r ) {
+						if ( ! r.ok || ! r.data || ! r.data.pages ) {
+							toast( ( r.data && r.data.message ) ? r.data.message : t( 'sitePlanFailed', 'Could not plan the site. Try rephrasing.' ), false );
+							return;
+						}
+						renderPlan( r.data );
+						toast( t( 'sitePlanReady', 'Site plan ready — review the pages, then build.' ), true );
+					} )
+					.catch( function () {
+						toast( t( 'networkError', 'Network error. Could not reach the server.' ), false );
+					} )
+					.then( function () {
+						setBusy( false );
+						resetPlanBtn();
+					} );
+			}
+
+			function resetPlanBtn() {
+				s.planBtn.textContent = t( 'planSite', 'Plan site' );
+			}
+
+			function renderPlan( plan ) {
+				s.title.value = plan.site_title || '';
+				s.list.innerHTML = '';
+				( plan.pages || [] ).forEach( function ( p ) {
+					s.list.appendChild( pageCard( p ) );
+				} );
+				s.planWrap.classList.remove( 'aieb-hidden' );
+				s.results.classList.add( 'aieb-hidden' );
+				s.results.innerHTML = '';
+			}
+
+			// Build one editable page card. The first home-flagged card gets the radio.
+			function pageCard( p ) {
+				var card = document.createElement( 'div' );
+				card.className = 'aieb-pagecard';
+				card.setAttribute( 'data-slug', p.slug || '' );
+				card.setAttribute( 'data-scope', p.scope || 'fullpage' );
+
+				var isHome = 'home' === p.role;
+				card.innerHTML =
+					'<div class="aieb-pagecard-top">' +
+						'<input class="input sm aieb-page-title" value="' + esc( p.title || '' ) + '" placeholder="' + esc( t( 'pageTitleLabel', 'Page title' ) ) + '" />' +
+						'<label class="aieb-home-radio" title="' + esc( t( 'homeBadge', 'Home' ) ) + '"><input type="radio" name="aieb-home"' + ( isHome ? ' checked' : '' ) + ' /> ' + esc( t( 'homeBadge', 'Home' ) ) + '</label>' +
+						'<button type="button" class="aieb-page-del" aria-label="' + esc( t( 'removePage', 'Remove' ) ) + '">&times;</button>' +
+					'</div>' +
+					'<textarea class="input aieb-page-brief" rows="3" placeholder="' + esc( t( 'pageBriefLabel', 'What this page contains' ) ) + '">' + esc( p.brief || '' ) + '</textarea>';
+
+				card.querySelector( '.aieb-page-del' ).addEventListener( 'click', function () {
+					card.parentNode.removeChild( card );
+				} );
+				return card;
+			}
+
+			// Collect the current (possibly edited) sitemap from the DOM.
+			function collectPages() {
+				var pages = [];
+				Array.prototype.forEach.call( s.list.querySelectorAll( '.aieb-pagecard' ), function ( card ) {
+					var title = ( card.querySelector( '.aieb-page-title' ).value || '' ).trim();
+					var brief = ( card.querySelector( '.aieb-page-brief' ).value || '' ).trim();
+					if ( ! title || ! brief ) {
+						return;
+					}
+					var home = card.querySelector( '.aieb-home-radio input' ).checked;
+					pages.push( {
+						slug: card.getAttribute( 'data-slug' ) || slugify( title ),
+						title: title,
+						brief: brief,
+						scope: card.getAttribute( 'data-scope' ) || 'fullpage',
+						home: home
+					} );
+				} );
+				return pages;
+			}
+
+			function buildSite() {
+				if ( busy ) {
+					return;
+				}
+				var pages = collectPages();
+				if ( ! pages.length ) {
+					toast( t( 'sitePromptEmpty', 'Describe the website you want to build.' ), false );
+					return;
+				}
+				var siteTitle = ( s.title.value || '' ).trim();
+				var homeSlug = ( pages.filter( function ( p ) { return p.home; } )[ 0 ] || pages[ 0 ] ).slug;
+
+				setBusy( true );
+				s.results.classList.remove( 'aieb-hidden' );
+				s.results.innerHTML = '';
+				var built = [];
+				var failed = null;
+
+				// Build pages sequentially to respect per-request timeouts + rate limits.
+				var chain = Promise.resolve();
+				pages.forEach( function ( page, i ) {
+					chain = chain.then( function () {
+						if ( failed ) {
+							return;
+						}
+						progress( buildingMsg( page.title, i + 1, pages.length ) );
+						return apiPost( cfg.buildSiteUrl, {
+							mode: 'page',
+							provider: selectedProvider(),
+							site_title: siteTitle,
+							page: { slug: page.slug, title: page.title, brief: page.brief, scope: page.scope }
+						} ).then( function ( r ) {
+							if ( ! r.ok || ! r.data || ! r.data.page_id ) {
+								failed = ( r.data && r.data.message ) ? r.data.message : t( 'genericError', 'Generation failed. Please try again.' );
+								return;
+							}
+							built.push( {
+								slug: r.data.slug || page.slug,
+								page_id: r.data.page_id,
+								nav_label: page.title,
+								view_url: r.data.view_url,
+								edit_url: r.data.edit_url,
+								title: r.data.title || page.title
+							} );
+							renderResults( built, null );
+						} );
+					} );
+				} );
+
+				chain.then( function () {
+					if ( failed ) {
+						renderResults( built, failed );
+						toast( t( 'siteBuildFailed', 'Site build stopped on a page. See details below.' ), false );
+						return null;
+					}
+					if ( ! built.length ) {
+						return null;
+					}
+					progress( t( 'finalizingSite', 'Building navigation menu…' ) );
+					return apiPost( cfg.buildSiteUrl, {
+						mode: 'finalize',
+						site_title: siteTitle,
+						pages: built.map( function ( b ) {
+							return { slug: b.slug, page_id: b.page_id, nav_label: b.nav_label };
+						} ),
+						home_slug: homeSlug,
+						set_homepage: !! ( s.setHome && s.setHome.checked )
+					} ).then( function () {
+						renderResults( built, null );
+						toast( ( t( 'siteBuilt', '%d pages created.' ) ).replace( '%d', built.length ), true );
+						loadPages();
+					} );
+				} ).catch( function () {
+					renderResults( built, t( 'networkError', 'Network error. Could not reach the server.' ) );
+				} ).then( function () {
+					setBusy( false );
+				} );
+			}
+
+			function buildingMsg( title, n, total ) {
+				return ( t( 'buildingPage', 'Building “%1$s” (%2$d of %3$d)…' ) )
+					.replace( '%1$s', title ).replace( '%2$d', n ).replace( '%3$d', total );
+			}
+
+			function progress( msg ) {
+				var p = s.results.querySelector( '.aieb-site-progress' );
+				if ( ! p ) {
+					p = document.createElement( 'div' );
+					p.className = 'aieb-site-progress';
+					s.results.insertBefore( p, s.results.firstChild );
+				}
+				p.innerHTML = '<span class="aieb-spin"></span> ' + esc( msg );
+			}
+
+			function renderResults( built, error ) {
+				var html = '';
+				if ( built.length ) {
+					html += '<ul class="aieb-site-pages">';
+					built.forEach( function ( b ) {
+						html += '<li>' +
+							'<span class="aieb-site-pg-title">' + esc( b.title ) + '</span>' +
+							'<a class="aieb-site-pg-link" href="' + esc( b.view_url ) + '" target="_blank" rel="noopener">' + esc( t( 'viewSite', 'View site' ) ) + '</a>' +
+							'<a class="aieb-site-pg-link" href="' + esc( b.edit_url ) + '" target="_blank" rel="noopener">' + esc( t( 'editInElementor', 'Edit in Elementor' ) ) + '</a>' +
+							'</li>';
+					} );
+					html += '</ul>';
+				}
+				if ( error ) {
+					html += '<div class="aieb-site-err">' + esc( error ) + '</div>';
+				}
+				s.results.innerHTML = html;
+			}
+
+			function setBusy( v ) {
+				busy = v;
+				s.planBtn.disabled = v;
+				s.buildBtn.disabled = v;
+				s.addBtn.disabled = v;
+			}
 		}
 
 		/* ---- Elementor JSON -> HTML preview ---- */

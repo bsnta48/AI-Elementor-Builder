@@ -8,9 +8,11 @@
 namespace AI_Elementor_Builder\Rest;
 
 use AI_Elementor_Builder\History\History;
-use AI_Elementor_Builder\Prompts\Design_Spec;
+use AI_Elementor_Builder\Media\Image_Resolver;
+use AI_Elementor_Builder\Media\Stock_Image_Provider;
 use AI_Elementor_Builder\Providers\Provider_Factory;
 use AI_Elementor_Builder\References\Reference_Registry;
+use AI_Elementor_Builder\Services\Page_Generator;
 use AI_Elementor_Builder\Settings\Settings;
 use AI_Elementor_Builder\Validator\Elementor_Validator;
 use WP_Error;
@@ -49,6 +51,16 @@ class Generate_Controller {
 	private $references;
 
 	/**
+	 * @var Page_Generator
+	 */
+	private $generator;
+
+	/**
+	 * @var Image_Resolver
+	 */
+	private $images;
+
+	/**
 	 * @param Provider_Factory    $factory    Provider factory.
 	 * @param Elementor_Validator $validator  Elementor JSON validator.
 	 * @param Settings            $settings   Settings handler (mock mode lookup).
@@ -59,6 +71,8 @@ class Generate_Controller {
 		$this->validator  = $validator;
 		$this->settings   = $settings;
 		$this->references = $references;
+		$this->generator  = new Page_Generator( $factory, $validator, $settings, $references );
+		$this->images     = new Image_Resolver( new Stock_Image_Provider( $settings ) );
 	}
 
 	/**
@@ -170,117 +184,41 @@ class Generate_Controller {
 		$provider_key = (string) $request->get_param( 'provider' );
 		$prompt       = (string) $request->get_param( 'prompt' );
 
-		// Inject curated design exemplars as few-shot examples. An explicit user
-		// pick wins; otherwise auto-select the best exemplar(s) for the request so
-		// every generation gets a strong design anchor.
-		$reference_id = (string) $request->get_param( 'reference' );
-		$scope        = (string) $request->get_param( 'scope' );
-		$exemplars    = array();
-		if ( '' !== $reference_id ) {
-			$reference = $this->references->get( $reference_id );
-			if ( $reference ) {
-				$exemplars[] = $reference['content'];
-			}
-		} else {
-			foreach ( $this->references->auto_select( $scope, $prompt ) as $ref ) {
-				$exemplars[] = $ref['content'];
-			}
-		}
-		if ( ! empty( $exemplars ) ) {
-			$prompt .= "\n\nREFERENCE DESIGNS — match the structure, layout sophistication, spacing rhythm, typography scale and color discipline of the example(s) below. Adapt all content (text, labels, counts of items, colors if the request implies a different palette) to the user request above; do NOT copy their wording verbatim. Reuse their setting keys and nesting style. Reference Elementor JSON:\n"
-				. (string) wp_json_encode( $exemplars );
-		}
-
-		// Mock mode (WP_DEBUG only): return a canned template without touching a
-		// real provider, so the UI → preview → push flow is testable for free.
-		if ( $this->settings->is_mock_mode() ) {
-			$template = $this->mock_template();
-			History::add( get_current_user_id(), $prompt, $provider_key, $template );
-
-			return new WP_REST_Response(
-				array(
-					'provider' => $provider_key,
-					'model'    => 'mock',
-					'mock'     => true,
-					'template' => $template,
-				),
-				200
-			);
-		}
-
-		$provider = $this->factory->make( $provider_key );
-		if ( null === $provider ) {
-			return new WP_Error(
-				'aieb_unknown_provider',
-				__( 'Unknown provider.', 'ai-elementor-builder' ),
-				array( 'status' => 400 )
-			);
-		}
-
-		$model = (string) $request->get_param( 'model' );
-		if ( '' === $model ) {
-			$model = $this->factory->default_model( $provider_key );
-		}
-
-		// Full-page layouts produce large JSON; a low token cap truncates the
-		// response and breaks JSON parsing. Give the model generous headroom.
-		$options = array(
-			'system'     => $this->system_prompt(),
-			'max_tokens' => 16384,
+		$result = $this->generator->generate(
+			$prompt,
+			array(
+				'provider'   => $provider_key,
+				'model'      => (string) $request->get_param( 'model' ),
+				'reference'  => (string) $request->get_param( 'reference' ),
+				'scope'      => (string) $request->get_param( 'scope' ),
+				'image'      => (string) $request->get_param( 'image' ),
+				'image_mime' => (string) $request->get_param( 'image_mime' ),
+			)
 		);
-		if ( '' !== $model ) {
-			$options['model'] = $model;
-		}
 
-		// Attach a reference image when both the data and a valid MIME are present.
-		$image_data = (string) $request->get_param( 'image' );
-		$image_mime = (string) $request->get_param( 'image_mime' );
-		$allowed_mimes = array( 'image/png', 'image/jpeg', 'image/webp', 'image/gif' );
-		if ( '' !== $image_data && in_array( $image_mime, $allowed_mimes, true ) ) {
-			$options['image'] = array(
-				'mime' => $image_mime,
-				'data' => $image_data,
-			);
-		}
-
-		$result = $provider->generate( $prompt, $options );
 		if ( empty( $result['success'] ) ) {
-			return new WP_Error(
-				'aieb_provider_error',
-				$result['error'] ? $result['error'] : __( 'Provider request failed.', 'ai-elementor-builder' ),
-				array( 'status' => 502 )
-			);
+			$data = array( 'status' => $result['status'] );
+			if ( isset( $result['raw'] ) ) {
+				$data['raw'] = $result['raw'];
+			}
+			return new WP_Error( $result['error_code'], $result['error'], $data );
 		}
 
-		$text = $provider->extract_text( $result['json'] );
-		if ( '' === $text ) {
-			return new WP_Error(
-				'aieb_empty_response',
-				__( 'Provider returned no usable text.', 'ai-elementor-builder' ),
-				array( 'status' => 502 )
-			);
-		}
-
-		$validated = $this->validator->validate( $text );
-		if ( empty( $validated['valid'] ) ) {
-			return new WP_Error(
-				'aieb_invalid_template',
-				$validated['error'],
-				array(
-					'status' => 422,
-					'raw'    => $text,
-				)
-			);
+		// Resolve AI image keywords to real photos in the Media Library (or
+		// placeholders when no stock key is set), so preview + push show images.
+		if ( isset( $result['template']['content'] ) && is_array( $result['template']['content'] ) ) {
+			$result['template']['content'] = $this->images->resolve_final( $result['template']['content'], 0 );
 		}
 
 		// Record this generation in the user's history (newest first, last 10).
-		History::add( get_current_user_id(), $prompt, $provider_key, $validated['data'] );
+		History::add( get_current_user_id(), $prompt, $provider_key, $result['template'] );
 
 		return new WP_REST_Response(
 			array(
-				'provider' => $provider_key,
-				'model'    => $model,
-				'template' => $validated['data'],
+				'provider' => $result['provider'],
+				'model'    => $result['model'],
+				'mock'     => ! empty( $result['mock'] ),
+				'template' => $result['template'],
 			),
 			200
 		);
@@ -316,138 +254,5 @@ class Generate_Controller {
 		}
 
 		return $value;
-	}
-
-	/**
-	 * A hardcoded, valid Elementor template used by mock mode. Mirrors the exact
-	 * top-level shape the system prompt requires: a hero container with a heading,
-	 * a sub-heading, and a button.
-	 *
-	 * @return array
-	 */
-	private function mock_template(): array {
-		return array(
-			'version'       => '0.4',
-			'type'          => 'page',
-			'page_settings' => (object) array(),
-			'content'       => array(
-				array(
-					'id'       => 'a1b2c3d4',
-					'elType'   => 'container',
-					'settings' => array(
-						'content_width'          => 'boxed',
-						'background_background'   => 'gradient',
-						'background_color'        => '#4f46e5',
-						'background_color_b'      => '#9333ea',
-						'background_gradient_angle' => array( 'unit' => 'deg', 'size' => 135 ),
-						'background_gradient_type'  => 'linear',
-						'padding'                 => array( 'unit' => 'px', 'top' => '90', 'right' => '24', 'bottom' => '90', 'left' => '24' ),
-						'flex_direction'          => 'column',
-						'align_items'             => 'center',
-						'gap'                     => array( 'unit' => 'px', 'size' => 20 ),
-					),
-					'elements' => array(
-						array(
-							'id'         => 'b2c3d4e5',
-							'elType'     => 'widget',
-							'widgetType' => 'heading',
-							'settings'   => array(
-								'title'                 => 'Mock Mode Is Working',
-								'header_size'           => 'h1',
-								'align'                 => 'center',
-								'title_color'           => '#ffffff',
-								'typography_typography' => 'custom',
-								'typography_font_size'  => array( 'unit' => 'px', 'size' => 48 ),
-								'typography_font_weight' => '700',
-								'typography_line_height' => array( 'unit' => 'em', 'size' => 1.2 ),
-							),
-							'elements'   => array(),
-						),
-						array(
-							'id'         => 'c3d4e5f6',
-							'elType'     => 'widget',
-							'widgetType' => 'text-editor',
-							'settings'   => array(
-								'editor'                => '<p>This template was returned instantly without calling any AI provider.</p>',
-								'align'                 => 'center',
-								'text_color'            => '#e9d5ff',
-								'typography_typography' => 'custom',
-								'typography_font_size'  => array( 'unit' => 'px', 'size' => 18 ),
-							),
-							'elements'   => array(),
-						),
-						array(
-							'id'         => 'd4e5f6a7',
-							'elType'     => 'widget',
-							'widgetType' => 'button',
-							'settings'   => array(
-								'text'             => 'Get Started',
-								'button_text'      => 'Get Started',
-								'align'            => 'center',
-								'button_link'      => array( 'url' => '#' ),
-								'background_color' => '#ffffff',
-								'button_text_color' => '#4f46e5',
-								'border_radius'    => array( 'unit' => 'px', 'top' => '8', 'right' => '8', 'bottom' => '8', 'left' => '8' ),
-								'text_padding'     => array( 'unit' => 'px', 'top' => '14', 'right' => '36', 'bottom' => '14', 'left' => '36' ),
-							),
-							'elements'   => array(),
-						),
-					),
-				),
-			),
-		);
-	}
-
-	/**
-	 * The detailed system prompt constraining the model to Elementor JSON.
-	 *
-	 * @return string
-	 */
-	private function system_prompt(): string {
-		$contract = <<<'PROMPT'
-You are an Elementor page-template generator. Output ONLY a single valid JSON object — no markdown, no code fences, no prose, no explanation before or after.
-
-The JSON MUST be a complete Elementor template document with this exact top-level shape:
-{
-  "version": "0.4",
-  "type": "page",
-  "page_settings": {},
-  "content": [ ...top-level elements... ]
-}
-
-Every element in "content" (and recursively in any "elements" array) MUST have exactly these fields:
-- "id": an 8-character lowercase hexadecimal string, unique within the document (e.g. "a1b2c3d4")
-- "elType": one of "container" or "widget"
-- "settings": an object of Elementor settings (use {} when none)
-- "elements": an array of child elements (use [] when none)
-
-Rules:
-- Layout/structure elements use "elType": "container" and hold children in "elements".
-- Content elements use "elType": "widget" and MUST additionally include "widgetType" (e.g. "heading", "text-editor", "button", "image", "icon-list"). Widgets do not contain other elements: their "elements" array is [].
-- Use only standard Elementor core widget types.
-- Nest containers to express rows/columns and sections.
-- For a full page, output MULTIPLE top-level section containers in "content" (hero, features, about, testimonials, pricing/CTA, footer, etc.) — each a separate top-level container. Do not collapse a full page into a single section.
-- Put real, sensible default content in widget "settings" (e.g. heading "title", button "text").
-- Do NOT include any field other than those listed. Do NOT wrap the JSON in ```.
-
-STYLING — always include visual styling in "settings" so the design has real colors, spacing, and typography. Use these Elementor setting keys:
-- Container background: "background_background":"classic" with "background_color":"#RRGGBB"; OR a gradient with "background_background":"gradient","background_color":"#RRGGBB","background_color_b":"#RRGGBB","background_gradient_angle":{"unit":"deg","size":135},"background_gradient_type":"linear".
-- Container layout/spacing: "padding":{"unit":"px","top":"80","right":"24","bottom":"80","left":"24"}, "flex_direction":"column"|"row", "justify_content":"center", "align_items":"center", "gap":{"unit":"px","size":24}.
-- Heading color: "title_color":"#RRGGBB". Text color: "text_color":"#RRGGBB".
-- Typography (any text widget): "typography_typography":"custom","typography_font_size":{"unit":"px","size":48},"typography_font_weight":"700","typography_line_height":{"unit":"em","size":1.2}.
-- Button: "background_color":"#RRGGBB","button_text_color":"#ffffff","border_radius":{"unit":"px","top":"8","right":"8","bottom":"8","left":"8"},"text_padding":{"unit":"px","top":"14","right":"32","bottom":"14","left":"32"}.
-- Sizes are objects {"unit":"px","size":N}; dimensions (padding/margin/border_radius) are {"unit":"px","top","right","bottom","left"}. Pick a coherent, attractive color palette and apply it consistently.
-
-RESPONSIVE — the layout MUST adapt to tablet and mobile. Elementor stores per-breakpoint values under the SAME setting key with a "_tablet" or "_mobile" suffix; desktop is the unsuffixed key. Always provide responsive values where they matter:
-- Multi-column/row containers ("flex_direction":"row") MUST stack on mobile: add "flex_direction_mobile":"column" (and "flex_direction_tablet":"column" when 3+ columns). Reset alignment if needed (e.g. "align_items_mobile":"stretch").
-- Reduce section spacing on smaller screens: e.g. "padding":{"unit":"px","top":"80",...} with "padding_tablet":{"unit":"px","top":"56",...} and "padding_mobile":{"unit":"px","top":"40",...}.
-- Scale large typography down: a heading with "typography_font_size":{"unit":"px","size":48} should add "typography_font_size_tablet":{"unit":"px","size":36} and "typography_font_size_mobile":{"unit":"px","size":28}.
-- Shrink gaps on mobile when large: pair "gap" with "gap_mobile".
-- Suffixed keys take the SAME value shape as their base key (size objects stay size objects, dimensions stay dimension objects). Only add a suffixed key when the responsive value differs from desktop.
-
-Return the JSON object and nothing else.
-PROMPT;
-
-		return $contract . "\n\n" . Design_Spec::rules();
 	}
 }

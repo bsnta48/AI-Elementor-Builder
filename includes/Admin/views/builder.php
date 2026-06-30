@@ -91,6 +91,10 @@ $aieb_settings_url = menu_page_url( 'ai-elementor-builder-settings', false );
 			<div class="aieb-railbody scroll">
 				<!-- COMPOSE (chat) -->
 				<div class="aieb-tabpane active" data-pane="compose">
+					<div class="aieb-modesw" id="aieb-modesw" role="tablist" aria-label="<?php esc_attr_e( 'Build mode', 'ai-elementor-builder' ); ?>">
+						<button class="active" type="button" data-mode="single" role="tab" aria-selected="true"><?php esc_html_e( 'Single page', 'ai-elementor-builder' ); ?></button>
+						<button type="button" data-mode="site" role="tab" aria-selected="false"><?php esc_html_e( 'Full website', 'ai-elementor-builder' ); ?></button>
+					</div>
 					<div class="aieb-chathead">
 						<button type="button" class="btn xs" id="aieb-new-chat" title="<?php esc_attr_e( 'Start a new chat', 'ai-elementor-builder' ); ?>">
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -158,6 +162,35 @@ $aieb_settings_url = menu_page_url( 'ai-elementor-builder-settings', false );
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
 							<?php esc_html_e( 'Generate design', 'ai-elementor-builder' ); ?>
 						</button>
+					</div>
+
+					<!-- FULL WEBSITE: plan a multi-page site, then build each page + nav menu -->
+					<div class="aieb-site" id="aieb-site">
+						<div class="aieb-site-intro" id="aieb-site-intro">
+							<p class="aieb-site-hint"><?php esc_html_e( 'Describe the whole website. I’ll plan the pages, then build each one and wire up a navigation menu.', 'ai-elementor-builder' ); ?></p>
+							<textarea class="input" id="aieb-site-prompt" rows="3" placeholder="<?php esc_attr_e( 'e.g. A website for a yoga studio: home, about, classes, pricing, contact', 'ai-elementor-builder' ); ?>"></textarea>
+							<button class="btn primary block" type="button" id="aieb-plan-site">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+								<?php esc_html_e( 'Plan site', 'ai-elementor-builder' ); ?>
+							</button>
+						</div>
+
+						<div class="aieb-site-plan aieb-hidden" id="aieb-site-plan">
+							<label class="aieb-lbl" for="aieb-site-title"><?php esc_html_e( 'Site title', 'ai-elementor-builder' ); ?></label>
+							<input class="input" id="aieb-site-title" />
+							<div class="aieb-lbl aieb-pages-lbl"><?php esc_html_e( 'Pages', 'ai-elementor-builder' ); ?></div>
+							<div class="aieb-pagelist" id="aieb-page-list"></div>
+							<button class="btn xs block" type="button" id="aieb-add-page">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+								<?php esc_html_e( 'Add page', 'ai-elementor-builder' ); ?>
+							</button>
+							<label class="aieb-check"><input type="checkbox" id="aieb-set-home" checked /> <?php esc_html_e( 'Set the Home page as the site’s front page', 'ai-elementor-builder' ); ?></label>
+							<button class="btn primary block" type="button" id="aieb-build-site">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+								<?php esc_html_e( 'Build site', 'ai-elementor-builder' ); ?>
+							</button>
+							<div class="aieb-site-results aieb-hidden" id="aieb-site-results"></div>
+						</div>
 					</div>
 				</div>
 

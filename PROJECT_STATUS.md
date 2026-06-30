@@ -6,7 +6,59 @@
 
 ## Current Task
 <!-- one line: what is being worked on right now -->
-DONE: session-based conversational planning (chat → finalize brief → generate). Plan: ~/.claude/plans/serene-petting-fiddle.md.
+DONE (1.10.0): P0 real-images + P1 multi-page site generation. Full plan: MULTIPAGE_PLAN.md.
+
+## Update (AIEB_VERSION 1.10.0) — real images (P0) + multi-page site (P1)
+
+Goal shift: plugin was single-page only. Added full-website capability + fixed broken AI images.
+
+**Refactor (shared services, no behavior change):**
+- [x] `includes/Services/Page_Generator.php` — owns system_prompt + mock_template + exemplar
+  injection + provider call + validate. `Generate_Controller` + `Build_Site_Controller` both delegate.
+- [x] `includes/Services/Elementor_Page_Writer.php` — owns `_elementor_data` write invariants
+  (slash, edit_mode=builder, version stamp, CSS flush). `Push_Controller` + build-site delegate.
+
+**P0 images:**
+- [x] system_prompt (in Page_Generator) now tells model to leave image `url` EMPTY + supply
+  descriptive `alt` keywords (widget `image` + container `background_image`).
+- [x] `includes/Media/Stock_Image_Provider.php` — Unsplash (preferred) + Pexels search, transient-cached.
+- [x] `includes/Media/Image_Resolver.php` — walks tree, `resolve_final()` sideloads photos into
+  Media Library (rewrites url+id), `resolve_preview()` remote-only; inline-SVG placeholder fallback
+  when no key/no result (never broken images). Dedupes per run.
+- [x] Wired into `Generate_Controller` (resolve_final, post 0) — preview + push show real images.
+- [x] Settings: `unsplash_api_key` + `pexels_api_key` (secret_fields + new "Stock Images" section).
+
+**P1 multi-page:**
+- [x] `includes/Prompts/Site_Plan_Spec.php` — sitemap JSON contract (pages[] + menu[]).
+- [x] `includes/Rest/Site_Plan_Controller.php` — `POST /plan-site` → normalized {site_title,pages,menu}.
+  Mock-mode canned sitemap. needs `publish_pages`.
+- [x] `includes/Rest/Build_Site_Controller.php` — `POST /build-site` two modes:
+  `mode=page` (generate 1 page → wp_insert_post → resolve_final images attached to page → write),
+  `mode=finalize` (build/assign nav menu to primary theme location + optional set front page).
+  Client drives the per-page loop (timeout-safe).
+- [x] Wired both in `Plugin.php`. `Menu` localizes `planSiteUrl`/`buildSiteUrl` + ~20 i18n strings.
+- [x] Frontend: builder.php mode toggle (Single page / Full website) + `#aieb-site` panel
+  (prompt → Plan site → editable page cards [title/brief/home radio/add/remove] → Build site →
+  progress + per-page result links). JS `initSiteBuilder()` module (self-contained, appended after
+  `toast()`, reuses apiPost/toast/t/selectedProvider). CSS appended to builder.css.
+- [x] All `php -l` + `node --check` clean. AIEB_VERSION → 1.10.0.
+
+**Decisions locked (this session):** Elementor Free now (Pro Theme Builder later), stock API + sideload,
+scope = P0+P1, Elementor primary (Gutenberg stays single-page export).
+
+**NOT yet done / next:**
+- [ ] Manual test in WP (Mock mode WP_DEBUG on): toggle Full website → "yoga studio site" → Plan →
+  edit pages → Build → confirm pages created, nav menu assigned, home set. Then real provider +
+  Unsplash key: confirm real images sideload.
+- [ ] Gutenberg multi-page (deferred). Header/footer global parts = P2. Global theme tokens = P3.
+  Widget coverage (forms/slider) = P4.
+- [ ] Orphan media: single-page Generate sideloads to post 0 (unattached); if user never pushes,
+  media lingers. Consider cleanup or defer sideload to push. (build-site attaches to its page — fine.)
+- [ ] Everything still UNCOMMITTED (see note below) — now also new dirs `includes/Services/`,
+  `includes/Media/`, files `Site_Plan_Spec.php`, `Site_Plan_Controller.php`, `Build_Site_Controller.php`,
+  `MULTIPAGE_PLAN.md`. Needs a commit.
+
+## (history) session-based conversational planning. Plan: ~/.claude/plans/serene-petting-fiddle.md.
 
 ## Update (AIEB_VERSION 1.9.2) — conversational sessions
 <!-- 1.9.1/1.9.2 = builder.js + builder.css polish/asset cache-bust on the session feature; no structural change beyond items below. -->
